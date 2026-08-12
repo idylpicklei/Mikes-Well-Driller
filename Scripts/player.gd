@@ -3,6 +3,13 @@ extends CharacterBody2D
 
 const SPEED = 130.0
 const JUMP_VELOCITY = -300.0
+const FALL_Y := 200.0
+
+var spawn_position: Vector2
+
+
+func _ready() -> void:
+	spawn_position = global_position
 
 
 func _physics_process(delta: float) -> void:
@@ -23,3 +30,15 @@ func _physics_process(delta: float) -> void:
 		velocity.x = move_toward(velocity.x, 0, SPEED)
 
 	move_and_slide()
+
+	if global_position.y > FALL_Y:
+		_respawn()
+
+
+func _respawn() -> void:
+	global_position = spawn_position
+	velocity = Vector2.ZERO
+	var camera := get_node_or_null("Camera2D") as Camera2D
+	if camera:
+		camera.reset_smoothing()
+
