@@ -1,8 +1,9 @@
-[gd_scene load_steps=9 format=4 uid="uid://datr1s5cwlqma"]
+[gd_scene load_steps=11 format=4 uid="uid://datr1s5cwlqma"]
 
 [ext_resource type="PackedScene" uid="uid://chn4gyaisr31t" path="res://Scenes/player.tscn" id="1_7u14b"]
 [ext_resource type="Texture2D" uid="uid://dcmc76p4fwh8c" path="res://Assets/sprites/world_tileset.png" id="2_t642p"]
 [ext_resource type="PackedScene" uid="uid://bouhbljbx8m26" path="res://Scenes/platform.tscn" id="3_ibd3q"]
+[ext_resource type="Script" path="res://Scripts/killzone.gd" id="4_killzone"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_30sk3"]
 texture = ExtResource("2_t642p")
@@ -232,6 +233,9 @@ _data = {
 "move": SubResource("Animation_qrgjc")
 }
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_killzone"]
+size = Vector2(4000, 80)
+
 [node name="Game" type="Node2D"]
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
@@ -257,3 +261,11 @@ libraries = {
 "": SubResource("AnimationLibrary_5h8op")
 }
 autoplay = "move"
+
+[node name="Killzone" type="Area2D" parent="."]
+position = Vector2(200, 190)
+collision_layer = 0
+script = ExtResource("4_killzone")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Killzone"]
+shape = SubResource("RectangleShape2D_killzone")

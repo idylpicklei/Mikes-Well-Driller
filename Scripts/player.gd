@@ -3,9 +3,10 @@ extends CharacterBody2D
 
 const SPEED = 130.0
 const JUMP_VELOCITY = -300.0
-const FALL_Y := 200.0
+const FALL_Y := 180.0
 
 var spawn_position: Vector2
+var _restore_camera_smoothing := false
 
 
 func _ready() -> void:
@@ -13,6 +14,10 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if _restore_camera_smoothing:
+		_set_camera_smoothing(true)
+		_restore_camera_smoothing = false
+
 	# Add the gravity.
 	if not is_on_floor():
 		velocity += get_gravity() * delta
@@ -32,13 +37,30 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 	if global_position.y > FALL_Y:
-		_respawn()
+		respawn()
 
 
-func _respawn() -> void:
+func respawn() -> void:
+	_set_camera_smoothing(false)
+
 	global_position = spawn_position
 	velocity = Vector2.ZERO
-	var camera := get_node_or_null("Camera2D") as Camera2D
+	reset_physics_interpolation()
+
+	var camera := _camera()
 	if camera:
 		camera.reset_smoothing()
+		camera.force_update_scroll()
+		camera.reset_physics_interpolation()
 
+	_restore_camera_smoothing = true
+
+
+func _camera() -> Camera2D:
+	return get_viewport().get_camera_2d()
+
+
+func _set_camera_smoothing(enabled: bool) -> void:
+	var camera := _camera()
+	if camera:
+		camera.position_smoothing_enabled = enabled
