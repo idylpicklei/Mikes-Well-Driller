@@ -38,9 +38,36 @@ func _physics_process(delta: float) -> void:
 		velocity.x = move_toward(velocity.x, 0, SPEED)
 
 	move_and_slide()
+	_free_from_solids()
 
 	if global_position.y > fall_y:
 		respawn()
+
+
+func _free_from_solids() -> void:
+	if not _overlaps_solids():
+		return
+	var start := global_position
+	for _i in 48:
+		global_position.y -= 2.0
+		if not _overlaps_solids():
+			velocity.y = minf(velocity.y, 0.0)
+			reset_physics_interpolation()
+			return
+	global_position = start
+
+
+func _overlaps_solids() -> bool:
+	var shape_node := get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if shape_node == null or shape_node.shape == null:
+		return false
+	var space := get_world_2d().direct_space_state
+	var params := PhysicsShapeQueryParameters2D.new()
+	params.shape = shape_node.shape
+	params.transform = shape_node.global_transform
+	params.collision_mask = collision_mask
+	params.exclude = [get_rid()]
+	return not space.intersect_shape(params, 1).is_empty()
 
 
 func respawn() -> void:

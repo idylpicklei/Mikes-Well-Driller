@@ -20,7 +20,9 @@ var _flash_time := 0.0
 func _physics_process(delta: float) -> void:
 	_cooldown = maxf(_cooldown - delta, 0.0)
 	_update_flash(delta)
-	if BuildMenu.is_open:
+	if BuildMenu.block_shoot and not Input.is_action_pressed("shoot"):
+		BuildMenu.block_shoot = false
+	if BuildMenu.is_open or BuildMenu.block_shoot or BuildPlacer.is_placing:
 		_update_shake(delta)
 		return
 	_aim(delta)

@@ -22,6 +22,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 InputBindings="*res://Scripts/input_bindings.gd"
+GameResources="*res://Scripts/game_resources.gd"
 
 [input]
 

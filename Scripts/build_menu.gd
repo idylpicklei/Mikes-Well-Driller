@@ -5,6 +5,7 @@ signal category_chosen(category_id: StringName)
 signal item_chosen(category_id: StringName, item_id: StringName)
 
 static var is_open := false
+static var block_shoot := false
 
 const HUB_RADIUS := 56.0
 const CATEGORY_INNER := 62.0
@@ -87,8 +88,9 @@ func _gui_input(event: InputEvent) -> void:
 	if not is_open:
 		return
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		_on_click()
+		block_shoot = true
 		accept_event()
+		_on_click()
 
 
 func _process(delta: float) -> void:

@@ -1,3 +1,4 @@
+class_name PauseMenu
 extends Control
 
 enum View { MAIN, KEYBINDS }

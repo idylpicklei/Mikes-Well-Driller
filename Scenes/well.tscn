@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://iash7xpaahe3"]
+
+[ext_resource type="Script" path="res://Scripts/well.gd" id="1_well"]
+
+[node name="Well" type="Node2D"]
+z_index = 1
+script = ExtResource("1_well")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+position = Vector2(0, -16)
