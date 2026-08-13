@@ -1,7 +1,11 @@
-[gd_scene load_steps=9 format=3 uid="uid://chn4gyaisr31t"]
+[gd_scene load_steps=13 format=3 uid="uid://chn4gyaisr31t"]
 
 [ext_resource type="Texture2D" uid="uid://vurwe4j8xk4l" path="res://Assets/sprites/knight.png" id="1_n5n4h"]
 [ext_resource type="Script" path="res://Scripts/player.gd" id="1_n8skh"]
+[ext_resource type="Script" path="res://Scripts/gun.gd" id="2_gun"]
+[ext_resource type="Texture2D" path="res://Assets/sprites/desert_eagle.png" id="3_deagle"]
+[ext_resource type="Texture2D" path="res://Assets/sprites/muzzle_flash.png" id="4_flash"]
+[ext_resource type="AudioStream" uid="uid://cm8cs571jnmj8" path="res://Assets/sounds/explosion.wav" id="5_boom"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_ipcdf"]
 atlas = ExtResource("1_n5n4h")
@@ -56,3 +60,23 @@ frame_progress = 0.856046
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(0, -5)
 shape = SubResource("CircleShape2D_dunbc")
+
+[node name="Gun" type="Node2D" parent="."]
+z_index = 1
+position = Vector2(1, -8)
+script = ExtResource("2_gun")
+
+[node name="Sprite2D" type="Sprite2D" parent="Gun"]
+position = Vector2(5, -1)
+texture = ExtResource("3_deagle")
+
+[node name="Muzzle" type="Marker2D" parent="Gun"]
+position = Vector2(14, -3)
+
+[node name="MuzzleFlash" type="Sprite2D" parent="Gun/Muzzle"]
+visible = false
+texture = ExtResource("4_flash")
+
+[node name="ShootSound" type="AudioStreamPlayer2D" parent="Gun"]
+stream = ExtResource("5_boom")
+volume_db = -6.0
