@@ -1,0 +1,101 @@
+[gd_scene load_steps=2 format=3 uid="uid://cpausemenu00001"]
+
+[ext_resource type="Script" path="res://Scripts/pause_menu.gd" id="1_pause"]
+
+[node name="PauseMenuLayer" type="CanvasLayer"]
+layer = 30
+process_mode = 3
+
+[node name="PauseMenu" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+script = ExtResource("1_pause")
+
+[node name="Dimmer" type="ColorRect" parent="PauseMenu"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.02, 0.03, 0.05, 0.72)
+
+[node name="Center" type="CenterContainer" parent="PauseMenu"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MainPanel" type="VBoxContainer" parent="PauseMenu/Center"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="PauseMenu/Center/MainPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Paused"
+horizontal_alignment = 1
+
+[node name="ResumeButton" type="Button" parent="PauseMenu/Center/MainPanel"]
+custom_minimum_size = Vector2(220, 36)
+layout_mode = 2
+text = "Resume"
+
+[node name="KeybindsButton" type="Button" parent="PauseMenu/Center/MainPanel"]
+custom_minimum_size = Vector2(220, 36)
+layout_mode = 2
+text = "Key Binds"
+
+[node name="QuitButton" type="Button" parent="PauseMenu/Center/MainPanel"]
+custom_minimum_size = Vector2(220, 36)
+layout_mode = 2
+text = "Quit"
+
+[node name="KeybindsPanel" type="VBoxContainer" parent="PauseMenu/Center"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="KeybindsTitle" type="Label" parent="PauseMenu/Center/KeybindsPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Key Binds"
+horizontal_alignment = 1
+
+[node name="RemapHint" type="Label" parent="PauseMenu/Center/KeybindsPanel"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+text = "Press a key or mouse button. Esc cancels."
+horizontal_alignment = 1
+
+[node name="BindRows" type="VBoxContainer" parent="PauseMenu/Center/KeybindsPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ResetButton" type="Button" parent="PauseMenu/Center/KeybindsPanel"]
+custom_minimum_size = Vector2(220, 32)
+layout_mode = 2
+text = "Reset Defaults"
+
+[node name="BackButton" type="Button" parent="PauseMenu/Center/KeybindsPanel"]
+custom_minimum_size = Vector2(220, 32)
+layout_mode = 2
+text = "Back"
+
+[connection signal="pressed" from="PauseMenu/Center/MainPanel/ResumeButton" to="PauseMenu" method="_on_resume_pressed"]
+[connection signal="pressed" from="PauseMenu/Center/MainPanel/KeybindsButton" to="PauseMenu" method="_on_keybinds_pressed"]
+[connection signal="pressed" from="PauseMenu/Center/MainPanel/QuitButton" to="PauseMenu" method="_on_quit_pressed"]
+[connection signal="pressed" from="PauseMenu/Center/KeybindsPanel/ResetButton" to="PauseMenu" method="_on_reset_pressed"]
+[connection signal="pressed" from="PauseMenu/Center/KeybindsPanel/BackButton" to="PauseMenu" method="_on_back_pressed"]

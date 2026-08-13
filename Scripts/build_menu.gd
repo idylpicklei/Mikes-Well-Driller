@@ -25,6 +25,7 @@ var _open_t := 0.0
 
 
 func _ready() -> void:
+	add_to_group("build_menu")
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_font = load(FONT_PATH)
@@ -44,7 +45,19 @@ func add_category(id: StringName, label: String, color: Color, items: Array = []
 
 
 func toggle() -> void:
+	if get_tree().paused:
+		return
 	_set_open(not is_open)
+
+
+static func close_menu() -> void:
+	for node in Engine.get_main_loop().root.find_children("*", "BuildMenu", true, false):
+		(node as BuildMenu).close_menu_instance()
+		return
+
+
+func close_menu_instance() -> void:
+	_set_open(false)
 
 
 func _set_open(open: bool) -> void:
@@ -57,13 +70,15 @@ func _set_open(open: bool) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if get_tree().paused:
+		return
 	if event.is_action_pressed("build_menu") and not event.is_echo():
 		toggle()
 		get_viewport().set_input_as_handled()
 		return
 	if not is_open:
 		return
-	if event.is_action_pressed("ui_cancel"):
+	if event.is_action_pressed("pause"):
 		_set_open(false)
 		get_viewport().set_input_as_handled()
 
