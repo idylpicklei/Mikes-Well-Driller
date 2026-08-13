@@ -1,5 +1,5 @@
 78098b89c88a74ebe8c20117b8754620
-::res://::1786656618
+::res://::1786657174
 export_presets.cfg::TextFile::-1::1786566351::0::1::::<><><>0<>0<><>::
 icon.svg::CompressedTexture2D::831005273540175243::1786566351::1786566351::1::::<><><>0<>0<>86efe5b2006c09cf816f193c56337e0f<>res://.godot/imported/icon.svg-218a8f2b3041327d8a5756f3a245f83b.ctex::
 ::res://Assets/::1786566351
@@ -15,7 +15,7 @@ hurt.wav::AudioStreamWAV::4005662329157819627::1786566351::1786566351::1::::<><>
 jump.wav::AudioStreamWAV::5495503210490557459::1786566351::1786566351::1::::<><><>0<>0<>10703bf3adf862773472bda6a52d1277<>res://.godot/imported/jump.wav-37a1b6f890a57621d547e6e872aeb357.sample::
 power_up.wav::AudioStreamWAV::669433318556700575::1786566351::1786566351::1::::<><><>0<>0<>17b908bd79eea0f0f3040103affcedcd<>res://.godot/imported/power_up.wav-359f8a6678099d5ff83eaa154a913f3b.sample::
 tap.wav::AudioStreamWAV::274998442565056122::1786566351::1786566351::1::::<><><>0<>0<>4bc3f2d30a786e14ecec1a300e962c19<>res://.godot/imported/tap.wav-4501df6b6e4c02632fcee28bfc6332c4.sample::
-::res://Assets/sprites/::1786656700
+::res://Assets/sprites/::1786656718
 bullet.png::CompressedTexture2D::1211063935484600472::1786571232::1786571299::1::::<><><>0<>0<>aa3cfc2d780d051a7c9cee705cfadecb<>res://.godot/imported/bullet.png-e67c1f085d03b4f6bcc9cd3cc6b91d80.ctex::
 coin.png::CompressedTexture2D::8206456955880736589::1786566351::1786566351::1::::<><><>0<>0<>2566e33b7a8dafb2c53c27bc6393e5c0<>res://.godot/imported/coin.png-5cebf264b7708a56a3ce47f5a666e217.ctex::
 desert_eagle.png::CompressedTexture2D::3213089986269451554::1786571232::1786571299::1::::<><><>0<>0<>5a78042293f6645fd3cee7a5ab27af67<>res://.godot/imported/desert_eagle.png-1ec98457f200f8052c6d3f3332140e1a.ctex::
@@ -31,14 +31,17 @@ world_tileset.png::CompressedTexture2D::7324592503515678432::1786566351::1786566
 index.apple-touch-icon.png::CompressedTexture2D::7864681193012923211::1786566351::1786566408::1::::<><><>0<>0<>81f29c7223c9559c3f0fd127428929c5<>res://.godot/imported/index.apple-touch-icon.png-b21a756d869f84af832970a74d8371bc.ctex::
 index.icon.png::CompressedTexture2D::5980205638894935575::1786566351::1786566408::1::::<><><>0<>0<>3220b1a1dab87f1f346c6c7e6b815c10<>res://.godot/imported/index.icon.png-b92c9a802ad4b78e247784454a6b506f.ctex::
 index.png::CompressedTexture2D::5880749323081931580::1786566351::1786566408::1::::<><><>0<>0<>ab8913ef2f13ff06441d8f6f81d8f70c<>res://.godot/imported/index.png-0c78d14d192abe5f22f8c25928ca1ab8.ctex::
-::res://Scenes/::1786571299
+::res://Scenes/::1786656934
+build_menu.tscn::PackedScene::1528974476135133732::1786656934::0::1::::<><><>0<>0<><>::res://Scripts/build_menu.gd
 bullet.tscn::PackedScene::621783685300079336::1786656414::0::1::::<><><>0<>0<><>::res://Scripts/bullet.gd<>res://Assets/sprites/bullet.png
-game.tscn::PackedScene::7199564839810152656::1786656643::0::1::::<><><>0<>0<><>::uid://chn4gyaisr31t::::res://Scenes/player.tscn<>uid://dcmc76p4fwh8c::::res://Assets/sprites/world_tileset.png<>uid://bouhbljbx8m26::::res://Scenes/platform.tscn<>res://Scripts/killzone.gd
+game.tscn::PackedScene::7199564839810152656::1786656957::0::1::::<><><>0<>0<><>::uid://chn4gyaisr31t::::res://Scenes/player.tscn<>res://Scripts/terrain_generator.gd<>uid://v1v8sdav4uki::::res://Scenes/build_menu.tscn<>res://Scripts/killzone.gd
 platform.tscn::PackedScene::3410779446187594429::1786566351::0::1::::<><><>0<>0<><>::uid://bxpie4uxedy21::::res://Assets/sprites/platforms.png
 player.tscn::PackedScene::5292772952157505055::1786656414::0::1::::<><><>0<>0<><>::uid://vurwe4j8xk4l::::res://Assets/sprites/knight.png<>res://Scripts/player.gd
-::res://Scripts/::1786656637
+::res://Scripts/::1786656934
+build_catalog.gd::GDScript::1563130570071187931::1786656933::0::1::::BuildCatalog<>RefCounted<><>0<>0<><>::
+build_menu.gd::GDScript::7636063783150895039::1786656970::0::1::::BuildMenu<>Control<><>0<>0<><>::
 bullet.gd::GDScript::6385659123081193837::1786656414::0::1::::<>Area2D<><>0<>0<><>::
-gun.gd::GDScript::6450336024473328775::1786656414::0::1::::<>Node2D<><>0<>0<><>::
+gun.gd::GDScript::6450336024473328775::1786656954::0::1::::<>Node2D<><>0<>0<><>::
 killzone.gd::GDScript::4603310340973061351::1786568017::0::1::::<>Area2D<><>0<>0<><>::
 placeholder_tileset.gd::GDScript::5814592870010779116::1786656659::0::1::::PlaceholderTileset<>RefCounted<><>0<>0<><>::
 player.gd::GDScript::163860365382688702::1786656681::0::1::::<>CharacterBody2D<><>0<>0<><>::

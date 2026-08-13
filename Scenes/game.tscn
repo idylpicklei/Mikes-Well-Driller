@@ -1,7 +1,8 @@
-[gd_scene load_steps=5 format=3 uid="uid://datr1s5cwlqma"]
+[gd_scene load_steps=6 format=3 uid="uid://datr1s5cwlqma"]
 
 [ext_resource type="PackedScene" uid="uid://chn4gyaisr31t" path="res://Scenes/player.tscn" id="1_7u14b"]
 [ext_resource type="Script" path="res://Scripts/terrain_generator.gd" id="2_terrain"]
+[ext_resource type="PackedScene" uid="uid://bbuildwheelmenu01" path="res://Scenes/build_menu.tscn" id="3_build"]
 [ext_resource type="Script" path="res://Scripts/killzone.gd" id="4_killzone"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_killzone"]
@@ -27,3 +28,5 @@ script = ExtResource("4_killzone")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Killzone"]
 shape = SubResource("RectangleShape2D_killzone")
+
+[node name="BuildMenuLayer" parent="." instance=ExtResource("3_build")]
