@@ -1,0 +1,13 @@
+---
+description: Use placeholder art until final assets exist
+alwaysApply: true
+---
+
+# Placeholder Art
+
+This project will replace art later. Do not spend time on polished sprites, tiles, or VFX.
+
+- New visuals should be simple placeholders: solid colors, 1px borders, basic shapes, or short labels
+- Prefer generating textures in GDScript (`Image` / `ImageTexture`) or tiny PNGs under `Assets/sprites/`
+- Keep atlas layouts stable (tile size, tile order) so final art can drop in without code changes
+- Do not import or invent final character/tileset art unless the user provides it

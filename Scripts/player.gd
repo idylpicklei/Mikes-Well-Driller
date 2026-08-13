@@ -3,10 +3,10 @@ extends CharacterBody2D
 
 const SPEED = 130.0
 const JUMP_VELOCITY = -300.0
-const FALL_Y := 180.0
 const MAX_JUMPS := 2
 
 var spawn_position: Vector2
+var fall_y := 10000.0
 var jumps_remaining := MAX_JUMPS
 var _restore_camera_smoothing := false
 
@@ -41,7 +41,7 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 
-	if global_position.y > FALL_Y:
+	if global_position.y > fall_y:
 		respawn()
 
 
