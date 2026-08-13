@@ -10,3 +10,5 @@ res://Scripts/main_hub.gd
 res://Scripts/placeholder_hub.gd
 res://Scenes/well.tscn
 res://Scripts/game_resources.gd
+res://Scripts/bullet.gd
+res://Scripts/well.gd

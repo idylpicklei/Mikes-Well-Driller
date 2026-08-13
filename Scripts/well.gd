@@ -1,10 +1,47 @@
 extends Node2D
 
+const DEPLOY_TIME := 30.0
+const PRODUCE_TIME := 30.0
+const PRODUCE_AMOUNT := 1
+const BAR_SIZE := Vector2(28, 4)
+
+var _deployed := false
+var _timer := 0.0
+var _sprite: Sprite2D
+
 
 func _ready() -> void:
 	add_to_group("well")
 	z_index = 1
-	var sprite := get_node_or_null("Sprite2D") as Sprite2D
-	if sprite:
-		sprite.texture = PlaceholderWell.create_texture()
-		sprite.position = PlaceholderWell.SPRITE_OFFSET
+	_sprite = get_node_or_null("Sprite2D") as Sprite2D
+	if _sprite:
+		_sprite.texture = PlaceholderWell.create_texture()
+		_sprite.position = PlaceholderWell.SPRITE_OFFSET
+		_sprite.modulate = Color(0.7, 0.7, 0.72)
+	_timer = 0.0
+	set_process(true)
+
+
+func _process(delta: float) -> void:
+	_timer += delta
+	if _deployed:
+		if _timer >= PRODUCE_TIME:
+			_timer -= PRODUCE_TIME
+			GameResources.add_water(PRODUCE_AMOUNT)
+	elif _timer >= DEPLOY_TIME:
+		_timer = 0.0
+		_deployed = true
+		if _sprite:
+			_sprite.modulate = Color.WHITE
+	queue_redraw()
+
+
+func _draw() -> void:
+	var duration := PRODUCE_TIME if _deployed else DEPLOY_TIME
+	var progress := clampf(_timer / duration, 0.0, 1.0)
+	var top := PlaceholderWell.SPRITE_OFFSET.y - PlaceholderWell.SIZE.y * 0.5 - 8.0
+	var origin := Vector2(-BAR_SIZE.x * 0.5, top)
+	draw_rect(Rect2(origin, BAR_SIZE), Color(0.08, 0.09, 0.1, 0.9))
+	var fill := Color("3d6ea8") if _deployed else Color("d98a2b")
+	draw_rect(Rect2(origin, Vector2(BAR_SIZE.x * progress, BAR_SIZE.y)), fill)
+	draw_rect(Rect2(origin, BAR_SIZE), Color(0.05, 0.05, 0.06, 0.9), false, 1.0)

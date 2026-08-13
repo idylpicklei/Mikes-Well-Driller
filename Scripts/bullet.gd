@@ -20,7 +20,25 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	global_position += direction * SPEED * delta
+	var motion := direction * SPEED * delta
+	if _hit_world(global_position, global_position + motion):
+		return
+	global_position += motion
+
+
+func _hit_world(from: Vector2, to: Vector2) -> bool:
+	var space := get_world_2d().direct_space_state
+	var query := PhysicsRayQueryParameters2D.create(from, to)
+	query.collision_mask = collision_mask
+	query.hit_from_inside = true
+	if _ignore is CollisionObject2D:
+		query.exclude = [(_ignore as CollisionObject2D).get_rid()]
+	var hit := space.intersect_ray(query)
+	if hit.is_empty():
+		return false
+	global_position = hit.position
+	queue_free()
+	return true
 
 
 func _on_body_entered(body: Node2D) -> void:
