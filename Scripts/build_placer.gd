@@ -127,6 +127,7 @@ func _place_item() -> void:
 	_structures.add_child(node)
 	if _pending_item == &"main_hub":
 		hub_placed.emit(node)
+	BuildMenu.block_shoot = true
 	global_position = Vector2.ZERO
 	_cancel_placement()
 

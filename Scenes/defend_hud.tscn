@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://ctfpn7dw1m0e3"]
+[gd_scene load_steps=6 format=3 uid="uid://cdefendhud00001"]
 
 [ext_resource type="Script" path="res://Scripts/defend_hud.gd" id="1_hud"]
 
@@ -9,6 +9,9 @@ border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
 border_color = Color(0.15, 0.22, 0.3, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_water_fill"]
+bg_color = Color(0.24, 0.55, 0.82, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gold_bg"]
 bg_color = Color(0.12, 0.1, 0.06, 0.92)

@@ -9,10 +9,27 @@ var spawn_position: Vector2
 var fall_y := 10000.0
 var jumps_remaining := MAX_JUMPS
 var _restore_camera_smoothing := false
+var _move_dir := 0.0
+var _jump_queued := false
 
 
 func _ready() -> void:
 	spawn_position = global_position
+
+
+func _input(event: InputEvent) -> void:
+	if event.is_echo():
+		return
+	if event.is_action_pressed("move_left"):
+		_move_dir = -1.0
+	elif event.is_action_pressed("move_right"):
+		_move_dir = 1.0
+	elif event.is_action_released("move_left"):
+		_move_dir = 1.0 if Input.is_action_pressed("move_right") else 0.0
+	elif event.is_action_released("move_right"):
+		_move_dir = -1.0 if Input.is_action_pressed("move_left") else 0.0
+	if event.is_action_pressed("jump"):
+		_jump_queued = true
 
 
 func _physics_process(delta: float) -> void:
@@ -27,13 +44,13 @@ func _physics_process(delta: float) -> void:
 	if is_on_floor() and velocity.y >= 0:
 		jumps_remaining = MAX_JUMPS
 
-	if Input.is_action_just_pressed("jump") and jumps_remaining > 0:
+	if _jump_queued and jumps_remaining > 0:
 		velocity.y = JUMP_VELOCITY
 		jumps_remaining -= 1
+	_jump_queued = false
 
-	var direction := Input.get_axis("move_left", "move_right")
-	if direction:
-		velocity.x = direction * SPEED
+	if _move_dir != 0.0:
+		velocity.x = _move_dir * SPEED
 	else:
 		velocity.x = move_toward(velocity.x, 0, SPEED)
 
@@ -76,6 +93,8 @@ func respawn() -> void:
 	global_position = spawn_position
 	velocity = Vector2.ZERO
 	jumps_remaining = MAX_JUMPS
+	_jump_queued = false
+	_refresh_move_dir()
 	reset_physics_interpolation()
 
 	var camera := _camera()
@@ -85,6 +104,17 @@ func respawn() -> void:
 		camera.reset_physics_interpolation()
 
 	_restore_camera_smoothing = true
+
+
+func _refresh_move_dir() -> void:
+	var left := Input.is_action_pressed("move_left")
+	var right := Input.is_action_pressed("move_right")
+	if left and not right:
+		_move_dir = -1.0
+	elif right and not left:
+		_move_dir = 1.0
+	elif not left and not right:
+		_move_dir = 0.0
 
 
 func _camera() -> Camera2D:
