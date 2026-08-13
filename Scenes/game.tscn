@@ -19,7 +19,7 @@ position = Vector2(64, 0)
 
 [node name="Camera2D" type="Camera2D" parent="Player"]
 position = Vector2(2, -6)
-zoom = Vector2(2, 2)
+zoom = Vector2(1.25, 1.25)
 position_smoothing_enabled = true
 
 [node name="Killzone" type="Area2D" parent="."]
