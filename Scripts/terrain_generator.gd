@@ -12,6 +12,9 @@ extends TileMapLayer
 
 const PLACEHOLDER_ATLAS := "res://Assets/sprites/terrain_tileset.png"
 
+const MIN_SPAWNER_TILES := 60
+const SPAWNER_SIDE_CLEAR := 2
+
 var spawn_position := Vector2.ZERO
 
 var _height_noise := FastNoiseLite.new()
@@ -140,3 +143,91 @@ func _setup_world() -> void:
 			var rect := RectangleShape2D.new()
 			rect.size = Vector2((width + 8) * PlaceholderTileset.TILE_SIZE, 80)
 			shape_node.shape = rect
+
+	_place_enemy_spawner(game)
+
+
+func _place_enemy_spawner(game: Node) -> void:
+	var structures := game.get_node_or_null("Structures") as Node2D
+	if structures == null:
+		return
+
+	var spawn_x := int(width / 2.0)
+	var left_x := _find_open_spawner_left(spawn_x)
+	var surface := _surface_y(left_x)
+	var width_tiles := PlaceholderSpawner.WIDTH_TILES
+	var left_center := map_to_local(Vector2i(left_x, surface))
+	var right_center := map_to_local(Vector2i(left_x + width_tiles - 1, surface))
+	var foot := Vector2((left_center.x + right_center.x) * 0.5, left_center.y - PlaceholderTileset.TILE_SIZE * 0.5)
+	var spawner := preload("res://Scenes/enemy_spawner.tscn").instantiate()
+	structures.add_child(spawner)
+	spawner.global_position = to_global(foot)
+
+
+func _find_open_spawner_left(spawn_x: int) -> int:
+	var preferred := _spawner_column(spawn_x)
+	var found := _scan_open_spawner(spawn_x, preferred)
+	if found != -999999:
+		return found
+	var other := spawn_x - (preferred - spawn_x)
+	found = _scan_open_spawner(spawn_x, other)
+	if found != -999999:
+		return found
+	return preferred
+
+
+func _scan_open_spawner(spawn_x: int, start: int) -> int:
+	for offset in width:
+		for candidate in [start + offset, start - offset]:
+			if absi(candidate - spawn_x) < MIN_SPAWNER_TILES:
+				continue
+			if _spawner_site_open(candidate):
+				return candidate
+	return -999999
+
+
+func _spawner_site_open(left_x: int) -> bool:
+	var footprint := PlaceholderSpawner.WIDTH_TILES
+	var height := PlaceholderSpawner.HEIGHT_TILES
+	var first := left_x - SPAWNER_SIDE_CLEAR
+	var last := left_x + footprint + SPAWNER_SIDE_CLEAR - 1
+	if first < 1 or last >= width - 1:
+		return false
+
+	var surface := _surface_y(left_x)
+	for x in range(first, last + 1):
+		if _surface_y(x) != surface:
+			return false
+		if not _is_grass_cell(Vector2i(x, surface)):
+			return false
+		for dy in range(1, height + 1):
+			if _has_cell(Vector2i(x, surface - dy)):
+				return false
+	return true
+
+
+func _has_cell(cell: Vector2i) -> bool:
+	return get_cell_source_id(cell) != -1
+
+
+func _is_grass_cell(cell: Vector2i) -> bool:
+	return _has_cell(cell) and get_cell_atlas_coords(cell) == PlaceholderTileset.GRASS
+
+
+func _spawner_column(spawn_x: int) -> int:
+	var margin := 6
+	var side := 1 if (_height_noise.seed & 1) == 0 else -1
+	var extra := absi(_height_noise.seed >> 1) % 24
+	var x := spawn_x + side * (MIN_SPAWNER_TILES + extra)
+	x = clampi(x, margin, width - margin - 1)
+	if absi(x - spawn_x) >= MIN_SPAWNER_TILES:
+		return x
+
+	var left := spawn_x - MIN_SPAWNER_TILES
+	if left >= margin:
+		return left
+	var right := spawn_x + MIN_SPAWNER_TILES
+	if right <= width - margin - 1:
+		return right
+	return margin if spawn_x > int(width / 2.0) else width - margin - 1
+

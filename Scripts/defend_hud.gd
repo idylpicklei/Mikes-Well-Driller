@@ -53,7 +53,13 @@ func _on_item_chosen(_category_id: StringName, item_id: StringName) -> void:
 	if item_id == &"main_hub":
 		_status.text = "Place Main Hub: click ground, right-click cancel"
 	elif item_id == &"well":
-		_status.text = "Place Well: click ground, right-click cancel"
+		var def := BuildCatalog.placeable(&"well")
+		var max_count := int(def.get("max_count", 5))
+		var count := get_tree().get_nodes_in_group("well").size()
+		if count >= max_count:
+			_status.text = "Well limit reached (%d)" % max_count
+		else:
+			_status.text = "Place Well (%d/%d): click ground, right-click cancel" % [count, max_count]
 
 
 func _on_hub_placed(hub: Node2D) -> void:

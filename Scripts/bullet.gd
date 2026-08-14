@@ -6,6 +6,7 @@ const LIFETIME := 1.25
 
 var direction := Vector2.RIGHT
 var _ignore: Node
+var _spent := false
 
 
 func setup(dir: Vector2, shooter: Node) -> void:
@@ -37,11 +38,22 @@ func _hit_world(from: Vector2, to: Vector2) -> bool:
 	if hit.is_empty():
 		return false
 	global_position = hit.position
-	queue_free()
+	var collider: Variant = hit.get("collider")
+	if collider is Node:
+		_apply_hit(collider as Node)
+	else:
+		queue_free()
 	return true
 
 
 func _on_body_entered(body: Node2D) -> void:
-	if body == _ignore:
+	_apply_hit(body)
+
+
+func _apply_hit(node: Node) -> void:
+	if _spent or node == _ignore:
 		return
+	_spent = true
+	if node.has_method("take_damage"):
+		node.take_damage(1)
 	queue_free()

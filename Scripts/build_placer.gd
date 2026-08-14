@@ -45,7 +45,7 @@ func _on_item_chosen(_category_id: StringName, item_id: StringName) -> void:
 
 
 func _start_placement(item_id: StringName, def: Dictionary) -> void:
-	if _is_unique_built(def):
+	if _is_at_cap(def):
 		return
 	_pending_item = item_id
 	_pending = def
@@ -123,7 +123,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _place_item() -> void:
-	if _structures == null or _pending.is_empty():
+	if _structures == null or _pending.is_empty() or _is_at_cap(_pending):
 		_cancel_placement()
 		return
 
@@ -142,11 +142,12 @@ func _place_item() -> void:
 	_cancel_placement()
 
 
-func _is_unique_built(def: Dictionary) -> bool:
+func _is_at_cap(def: Dictionary) -> bool:
 	var group := str(def.get("unique_group", ""))
 	if group.is_empty():
 		return false
-	return not get_tree().get_nodes_in_group(group).is_empty()
+	var max_count := int(def.get("max_count", 1))
+	return get_tree().get_nodes_in_group(group).size() >= max_count
 
 
 func _snap_position(world_pos: Vector2) -> Vector2:
@@ -197,7 +198,7 @@ func _surface_grass_at(cell: Vector2i) -> Vector2i:
 
 
 func _is_valid_position(world_pos: Vector2) -> bool:
-	if _pending.is_empty() or _is_unique_built(_pending):
+	if _pending.is_empty() or _is_at_cap(_pending):
 		return false
 
 	var grass := _surface_grass_at(_world_to_cell(world_pos))

@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://da6hmsopgr42o"]
+
+[ext_resource type="Script" path="res://Scripts/enemy_spawner.gd" id="1_spawner"]
+
+[node name="EnemySpawner" type="Node2D"]
+z_index = 1
+script = ExtResource("1_spawner")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+position = Vector2(0, -16)

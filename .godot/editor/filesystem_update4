@@ -1,0 +1,10 @@
+res://Scripts/build_catalog.gd
+res://Scripts/build_placer.gd
+res://Scripts/bullet.gd
+res://Scripts/defend_hud.gd
+res://Scripts/player.gd
+res://Scripts/terrain_generator.gd
+res://Scenes/enemy.tscn
+res://Scenes/enemy_spawner.tscn
+res://Scripts/enemy.gd
+res://Scripts/placeholder_enemy.gd

@@ -57,7 +57,8 @@ static func placeable(item_id: StringName) -> Dictionary:
 		&"well":
 			return {
 				"scene": preload("res://Scenes/well.tscn"),
-				"unique_group": "",
+				"unique_group": "well",
+				"max_count": 5,
 				"width": PlaceholderWell.WIDTH_TILES,
 				"height": PlaceholderWell.HEIGHT_TILES,
 				"sprite_offset": PlaceholderWell.SPRITE_OFFSET,
