@@ -8,3 +8,4 @@ res://Scenes/enemy.tscn
 res://Scenes/enemy_spawner.tscn
 res://Scripts/enemy.gd
 res://Scripts/placeholder_enemy.gd
+res://Scripts/enemy_spawner.gd
