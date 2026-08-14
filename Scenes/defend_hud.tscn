@@ -81,6 +81,15 @@ text = "0 / 1000 gal"
 horizontal_alignment = 2
 vertical_alignment = 1
 
+[node name="GpmLabel" type="Label" parent="DefendHud/Margin/VBox/WaterRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(72, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "0.0 gpm"
+horizontal_alignment = 2
+vertical_alignment = 1
+
 [node name="GoldRow" type="HBoxContainer" parent="DefendHud/Margin/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 8

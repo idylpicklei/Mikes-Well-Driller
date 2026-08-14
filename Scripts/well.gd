@@ -1,13 +1,15 @@
 extends Node2D
 
 const DEPLOY_TIME := 30.0
-const PRODUCE_TIME := 30.0
+const PRODUCE_TIME := 15.0
 const PRODUCE_AMOUNT := 1
 const BAR_SIZE := Vector2(28, 4)
 
 var _deployed := false
 var _timer := 0.0
 var _sprite: Sprite2D
+var _efficiency := 1.0
+var _produce_time := PRODUCE_TIME
 
 
 func _ready() -> void:
@@ -19,14 +21,27 @@ func _ready() -> void:
 		_sprite.position = PlaceholderWell.SPRITE_OFFSET
 		_sprite.modulate = Color(0.7, 0.7, 0.72)
 	_timer = 0.0
+	call_deferred("_resolve_efficiency")
 	set_process(true)
+
+
+func gallons_per_minute() -> float:
+	if not _deployed or _produce_time <= 0.0:
+		return 0.0
+	return 60.0 * float(PRODUCE_AMOUNT) / _produce_time
+
+
+func _resolve_efficiency() -> void:
+	_efficiency = WellEfficiency.at_world(global_position)
+	_produce_time = PRODUCE_TIME / maxf(_efficiency, 0.01)
+	queue_redraw()
 
 
 func _process(delta: float) -> void:
 	_timer += delta
 	if _deployed:
-		if _timer >= PRODUCE_TIME:
-			_timer -= PRODUCE_TIME
+		if _timer >= _produce_time:
+			_timer -= _produce_time
 			GameResources.add_water(PRODUCE_AMOUNT)
 	elif _timer >= DEPLOY_TIME:
 		_timer = 0.0
@@ -37,7 +52,9 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
-	var duration := PRODUCE_TIME if _deployed else DEPLOY_TIME
+	var duration := _produce_time if _deployed else DEPLOY_TIME
+	if duration <= 0.0:
+		duration = DEPLOY_TIME
 	var progress := clampf(_timer / duration, 0.0, 1.0)
 	var top := PlaceholderWell.SPRITE_OFFSET.y - PlaceholderWell.SIZE.y * 0.5 - 8.0
 	var origin := Vector2(-BAR_SIZE.x * 0.5, top)

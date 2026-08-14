@@ -4,6 +4,7 @@ extends Control
 @onready var _health: Label = %HealthLabel
 @onready var _water_bar: ProgressBar = %WaterBar
 @onready var _water_label: Label = %WaterLabel
+@onready var _gpm_label: Label = %GpmLabel
 @onready var _gold_bar: ProgressBar = %GoldBar
 @onready var _gold_label: Label = %GoldLabel
 
@@ -18,6 +19,8 @@ func _ready() -> void:
 		GameResources.water_changed.connect(_refresh_water)
 	if not GameResources.gold_changed.is_connected(_refresh_gold):
 		GameResources.gold_changed.connect(_refresh_gold)
+	_refresh_gpm()
+	set_process(true)
 	call_deferred("_connect_signals")
 
 
@@ -32,6 +35,18 @@ func _connect_signals() -> void:
 	var menu := get_tree().get_first_node_in_group("build_menu") as BuildMenu
 	if menu and not menu.item_chosen.is_connected(_on_item_chosen):
 		menu.item_chosen.connect(_on_item_chosen)
+
+
+func _process(_delta: float) -> void:
+	_refresh_gpm()
+
+
+func _refresh_gpm() -> void:
+	var total := 0.0
+	for well in get_tree().get_nodes_in_group("well"):
+		if well.has_method("gallons_per_minute"):
+			total += float(well.gallons_per_minute())
+	_gpm_label.text = "%.1f gpm" % total
 
 
 func _on_item_chosen(_category_id: StringName, item_id: StringName) -> void:

@@ -1,0 +1,5 @@
+res://Scripts/terrain_generator.gd
+res://Scripts/well.gd
+res://Scripts/build_placer.gd
+res://Scripts/well_efficiency.gd
+res://Scripts/defend_hud.gd

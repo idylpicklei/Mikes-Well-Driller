@@ -20,6 +20,7 @@ var _cave_noise := FastNoiseLite.new()
 
 
 func _ready() -> void:
+	add_to_group("terrain")
 	tile_set = PlaceholderTileset.build(_atlas_texture())
 	_configure_noise()
 	_generate()
@@ -94,6 +95,20 @@ func _is_cave(x: int, y: int, surface: int) -> bool:
 	if y <= surface + 3 or y >= bedrock_y - 1:
 		return false
 	return _cave_noise.get_noise_2d(x, y) > 0.55
+
+
+func surface_cell_at(world_pos: Vector2) -> Vector2i:
+	var cell := local_to_map(to_local(world_pos))
+	if get_cell_source_id(cell) != -1:
+		while get_cell_source_id(cell + Vector2i(0, -1)) != -1:
+			cell += Vector2i(0, -1)
+		return cell
+	var probe := cell
+	for _i in 32:
+		probe += Vector2i(0, 1)
+		if get_cell_source_id(probe) != -1:
+			return probe
+	return Vector2i(-999999, -999999)
 
 
 func _setup_world() -> void:

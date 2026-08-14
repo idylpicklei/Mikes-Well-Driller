@@ -5,16 +5,20 @@ signal hub_placed(hub: Node2D)
 signal placement_cancelled
 
 const TILE_SIZE := PlaceholderTileset.TILE_SIZE
+const FONT_PATH := "res://Assets/fonts/PixelOperator8-Bold.ttf"
 
 static var is_placing := false
 
 var _terrain: TileMapLayer
 var _structures: Node2D
 var _ghost: Sprite2D
+var _font: Font
 var _pending_item: StringName = &""
 var _pending: Dictionary = {}
 var _valid := false
 var _wait_for_release := false
+var _popup_boost := 0
+var _show_efficiency := false
 
 
 func _ready() -> void:
@@ -22,6 +26,7 @@ func _ready() -> void:
 	_terrain = get_parent().get_node_or_null("Terrain") as TileMapLayer
 	_structures = get_parent().get_node_or_null("Structures") as Node2D
 	_create_ghost()
+	_font = load(FONT_PATH)
 	set_process(false)
 	call_deferred("_connect_build_menu")
 
@@ -48,6 +53,7 @@ func _start_placement(item_id: StringName, def: Dictionary) -> void:
 	_wait_for_release = true
 	_apply_ghost(def)
 	_ghost.visible = true
+	z_index = 20
 	set_process(true)
 
 
@@ -59,8 +65,11 @@ func _cancel_placement() -> void:
 	_pending = {}
 	_wait_for_release = false
 	_ghost.visible = false
+	_show_efficiency = false
 	global_position = Vector2.ZERO
+	z_index = 0
 	set_process(false)
+	queue_redraw()
 	placement_cancelled.emit()
 
 
@@ -87,6 +96,7 @@ func _process(_delta: float) -> void:
 	global_position = _snap_position(mouse)
 	_valid = _is_valid_position(mouse)
 	_ghost.modulate = Color(0.45, 1, 0.55, 0.65) if _valid else Color(1, 0.4, 0.4, 0.65)
+	_update_efficiency_popup()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -204,7 +214,24 @@ func _is_valid_position(world_pos: Vector2) -> bool:
 		for dy in range(1, height + 1):
 			if _has_tile(ground + Vector2i(0, -dy)):
 				return false
+	if _pending_item == &"well" and _overlaps_wells(_origin_on_grass(grass)):
+		return false
 	return true
+
+
+func _overlaps_wells(origin: Vector2) -> bool:
+	var proposed := _footprint_rect(origin, PlaceholderWell.SIZE)
+	for node in get_tree().get_nodes_in_group("well"):
+		if not node is Node2D:
+			continue
+		var other := _footprint_rect((node as Node2D).global_position, PlaceholderWell.SIZE)
+		if proposed.intersects(other):
+			return true
+	return false
+
+
+func _footprint_rect(origin: Vector2, size: Vector2i) -> Rect2:
+	return Rect2(origin + Vector2(-size.x * 0.5, -float(size.y)), Vector2(size))
 
 
 func _has_tile(cell: Vector2i) -> bool:
@@ -213,3 +240,30 @@ func _has_tile(cell: Vector2i) -> bool:
 
 func _is_grass(cell: Vector2i) -> bool:
 	return _has_tile(cell) and _terrain.get_cell_atlas_coords(cell) == PlaceholderTileset.GRASS
+
+
+func _update_efficiency_popup() -> void:
+	_show_efficiency = _pending_item == &"well"
+	if _show_efficiency:
+		var efficiency := WellEfficiency.at_world(global_position)
+		_popup_boost = WellEfficiency.boost_percent(efficiency)
+	queue_redraw()
+
+
+func _draw() -> void:
+	if not _show_efficiency or _font == null:
+		return
+
+	var boost_text := "+%d%%" % _popup_boost if _popup_boost >= 0 else "%d%%" % _popup_boost
+	var good: bool = _popup_boost >= 0
+	var fill := Color(0.18, 0.42, 0.2, 0.94) if good else Color(0.48, 0.14, 0.14, 0.94)
+	var accent := Color("7ed957") if good else Color("e85d5d")
+
+	var boost_size := _font.get_string_size(boost_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 8)
+	var width := boost_size.x + 8.0
+	var height := 12.0
+	var ghost_top := float(_pending.get("sprite_offset", Vector2.ZERO).y) - 10.0
+	var box := Rect2(Vector2(-width * 0.5, ghost_top - height - 3.0), Vector2(width, height))
+	draw_rect(box, fill)
+	draw_rect(box, accent, false, 1.0)
+	draw_string(_font, box.position + Vector2(4, 9), boost_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, accent)
