@@ -1,3 +1,9 @@
-res://Scenes/game.tscn::b51dc06077f02bb5c8fd9c73385da62f::1730159008::res://.godot/exported/133200997/export-d45e16ca8d170891778b9dcfa9c69e68-game.scn
-res://Scenes/platform.tscn::6092e54e6447c69ef036c819bc5da02f::1730159009::res://.godot/exported/133200997/export-1c750248b0c8da796cecd1f6aa3f1f6d-platform.scn
-res://Scenes/player.tscn::f680b7c24aba4444e5ae570a09a8f359::1730159009::res://.godot/exported/133200997/export-1753c997600d68ab5d20ae99fddb15c6-player.scn
+res://Scenes/game.tscn::e96105d0a0810fe4fb98e78941ee9758::1786658093::res://.godot/exported/133200997/export-d45e16ca8d170891778b9dcfa9c69e68-game.scn
+res://Scenes/platform.tscn::4db2bdf45d42365709e45a0b03f60e78::1786566351::res://.godot/exported/133200997/export-1c750248b0c8da796cecd1f6aa3f1f6d-platform.scn
+res://Scenes/player.tscn::bd2005664052044dacdcb47b75a73b45::1786656414::res://.godot/exported/133200997/export-1753c997600d68ab5d20ae99fddb15c6-player.scn
+res://Scenes/build_menu.tscn::5d37e2fb80c7b2283a64a792396b1337::1786656934::res://.godot/exported/133200997/export-76797d53816de0ea52c39a4cbd70f5c0-build_menu.scn
+res://Scenes/bullet.tscn::65dcde5ee494a8ab337767a31f750107::1786656414::res://.godot/exported/133200997/export-ebb3521b4f0ab2fc80eef1183e18e924-bullet.scn
+res://Scenes/defend_hud.tscn::724ae550d8d66d7499a654a018b77a17::1786745734::res://.godot/exported/133200997/export-40f306b26e98a96b664ac16515a1e8f8-defend_hud.scn
+res://Scenes/main_hub.tscn::a3c7ba9e9c61d7e12d336ea67b74c155::1786659509::res://.godot/exported/133200997/export-42e4a72f25cea87fa015f2209058bb8e-main_hub.scn
+res://Scenes/pause_menu.tscn::a974f94815c256ddaf870a8726bbcb47::1786657905::res://.godot/exported/133200997/export-e3d0420ddeb812b15edf3553f5556843-pause_menu.scn
+res://Scenes/well.tscn::5a87355b65be31a9707b434484c1a92f::1786659649::res://.godot/exported/133200997/export-f1feb9b13f7a83c5274514b3e70172a6-well.scn
