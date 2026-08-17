@@ -14,6 +14,8 @@ const PLACEHOLDER_ATLAS := "res://Assets/sprites/terrain_tileset.png"
 
 const MIN_SPAWNER_TILES := 60
 const SPAWNER_SIDE_CLEAR := 2
+const ACID_POOL_TILES := 12
+const ACID_DROP_TILES := 2
 
 var spawn_position := Vector2.ZERO
 
@@ -64,10 +66,6 @@ func _generate() -> void:
 			if _is_cave(x, y, surface):
 				continue
 			set_cell(Vector2i(x, y), 0, _atlas_at(x, y, surface))
-
-	for y in range(-12, bedrock_y + 1):
-		set_cell(Vector2i(-1, y), 0, PlaceholderTileset.BEDROCK)
-		set_cell(Vector2i(width, y), 0, PlaceholderTileset.BEDROCK)
 
 	var spawn_x := int(width / 2.0)
 	var spawn_cell := Vector2i(spawn_x, _surface_y(spawn_x))
@@ -127,11 +125,11 @@ func _setup_world() -> void:
 
 		var camera := player.get_node_or_null("Camera2D") as Camera2D
 		if camera:
-			var world_right := (width + 1) * PlaceholderTileset.TILE_SIZE
-			camera.limit_left = -PlaceholderTileset.TILE_SIZE
-			camera.limit_right = world_right
+			var tile := PlaceholderTileset.TILE_SIZE
+			camera.limit_left = -ACID_POOL_TILES * tile
+			camera.limit_right = (width + ACID_POOL_TILES) * tile
 			camera.limit_top = -320
-			camera.limit_bottom = (bedrock_y + 4) * PlaceholderTileset.TILE_SIZE
+			camera.limit_bottom = (bedrock_y + 4) * tile
 			camera.reset_smoothing()
 			camera.force_update_scroll()
 
@@ -144,7 +142,26 @@ func _setup_world() -> void:
 			rect.size = Vector2((width + 8) * PlaceholderTileset.TILE_SIZE, 80)
 			shape_node.shape = rect
 
+	_place_acid_pools(game)
 	_place_enemy_spawners(game)
+
+
+func _place_acid_pools(game: Node) -> void:
+	var tile := float(PlaceholderTileset.TILE_SIZE)
+	var pool_w := ACID_POOL_TILES * tile
+	var bottom := float((bedrock_y + 2) * PlaceholderTileset.TILE_SIZE)
+	_add_acid_pool(game, -pool_w, _surface_y(0) + ACID_DROP_TILES, pool_w, bottom)
+	_add_acid_pool(game, width * tile, _surface_y(width - 1) + ACID_DROP_TILES, pool_w, bottom)
+
+
+func _add_acid_pool(game: Node, left_px: float, top_cell_y: int, pool_w: float, bottom_px: float) -> void:
+	var top_px := float(top_cell_y * PlaceholderTileset.TILE_SIZE)
+	var height := maxf(bottom_px - top_px, float(PlaceholderTileset.TILE_SIZE) * 4.0)
+	var pool := preload("res://Scenes/acid_pool.tscn").instantiate()
+	game.add_child(pool)
+	pool.position = Vector2(left_px + pool_w * 0.5, top_px + height * 0.5)
+	if pool.has_method("setup"):
+		pool.setup(Vector2(pool_w, height))
 
 
 func _place_enemy_spawners(game: Node) -> void:

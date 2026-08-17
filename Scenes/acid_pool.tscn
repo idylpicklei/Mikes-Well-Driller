@@ -1,0 +1,14 @@
+[gd_scene load_steps=2 format=3 uid="uid://cacidpool000001"]
+
+[ext_resource type="Script" path="res://Scripts/acid_pool.gd" id="1_acid"]
+
+[node name="AcidPool" type="Area2D"]
+collision_layer = 0
+collision_mask = 1
+monitorable = false
+z_index = -1
+script = ExtResource("1_acid")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
