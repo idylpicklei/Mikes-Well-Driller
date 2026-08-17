@@ -7,3 +7,5 @@ res://Scenes/defend_hud.tscn::724ae550d8d66d7499a654a018b77a17::1786745734::res:
 res://Scenes/main_hub.tscn::a3c7ba9e9c61d7e12d336ea67b74c155::1786659509::res://.godot/exported/133200997/export-42e4a72f25cea87fa015f2209058bb8e-main_hub.scn
 res://Scenes/pause_menu.tscn::a974f94815c256ddaf870a8726bbcb47::1786657905::res://.godot/exported/133200997/export-e3d0420ddeb812b15edf3553f5556843-pause_menu.scn
 res://Scenes/well.tscn::5a87355b65be31a9707b434484c1a92f::1786659649::res://.godot/exported/133200997/export-f1feb9b13f7a83c5274514b3e70172a6-well.scn
+res://Scenes/enemy.tscn::70b01587180cb7768d6397ee1e6cdbb1::1786749498::res://.godot/exported/133200997/export-7111e2a4ba75c4a329f0f9553f2950f2-enemy.scn
+res://Scenes/enemy_spawner.tscn::9ecdd3e2dbfd8d0abd6f60ba99bac7c3::1786749171::res://.godot/exported/133200997/export-fcc145d364898bcd25de1807fa906781-enemy_spawner.scn
