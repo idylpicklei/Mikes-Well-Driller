@@ -2,9 +2,19 @@ extends CharacterBody2D
 
 const SPEED := 22.0
 const JUMP_VELOCITY := -260.0
+const STUCK_JUMP_VELOCITY := -340.0
+const STUCK_SPEED := 8.0
+const BLOCKED_TIME := 0.08
+const STUCK_MOVE := 8.0
+const STUCK_SECONDS := 2.5
+const STUCK_JUMP_COOLDOWN := 0.45
 const MAX_HEALTH := 1
 
 var health := MAX_HEALTH
+var _blocked_for := 0.0
+var _last_x := INF
+var _no_move_for := 0.0
+var _stuck_jump_cd := 0.0
 
 
 func _ready() -> void:
@@ -20,16 +30,15 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity += get_gravity() * delta
 
+	var dir := 0.0
 	var target := _target()
 	if target:
-		var dir := signf(target.global_position.x - global_position.x)
-		velocity.x = dir * SPEED
-	else:
-		velocity.x = 0.0
+		dir = signf(target.global_position.x - global_position.x)
+	velocity.x = dir * SPEED
 
 	move_and_slide()
-	if is_on_floor() and is_on_wall() and _walking_into_wall():
-		velocity.y = JUMP_VELOCITY
+	_hop_if_blocked(delta, dir)
+	_hop_if_stuck(delta)
 	if global_position.y > 4000.0:
 		queue_free()
 
@@ -42,8 +51,48 @@ func take_damage(amount: int) -> void:
 		queue_free()
 
 
-func _walking_into_wall() -> bool:
-	return signf(velocity.x) == -signf(get_wall_normal().x)
+func _hop_if_blocked(delta: float, dir: float) -> void:
+	if is_on_floor() and dir != 0.0 and _is_blocked(dir):
+		_blocked_for += delta
+		if _blocked_for >= BLOCKED_TIME:
+			velocity.y = JUMP_VELOCITY
+			_blocked_for = 0.0
+	else:
+		_blocked_for = 0.0
+
+
+func _hop_if_stuck(delta: float) -> void:
+	_stuck_jump_cd = maxf(_stuck_jump_cd - delta, 0.0)
+	if _last_x == INF:
+		_last_x = global_position.x
+		return
+
+	if absf(global_position.x - _last_x) >= STUCK_MOVE:
+		_no_move_for = 0.0
+		_last_x = global_position.x
+		return
+
+	_no_move_for += delta
+	if _no_move_for < STUCK_SECONDS or _stuck_jump_cd > 0.0:
+		return
+
+	velocity.y = STUCK_JUMP_VELOCITY
+	_stuck_jump_cd = STUCK_JUMP_COOLDOWN
+
+
+func _is_blocked(dir: float) -> bool:
+	if is_on_wall() and signf(dir) == -signf(get_wall_normal().x):
+		return true
+	if absf(get_real_velocity().x) < STUCK_SPEED:
+		return true
+	for i in get_slide_collision_count():
+		var col := get_slide_collision(i)
+		var other := col.get_collider()
+		if other is Node and (other as Node).is_in_group("enemy"):
+			return true
+		if absf(col.get_normal().x) > 0.6 and signf(dir) == -signf(col.get_normal().x):
+			return true
+	return false
 
 
 func _target() -> Node2D:

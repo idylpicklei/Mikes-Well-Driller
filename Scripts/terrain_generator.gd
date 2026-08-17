@@ -144,16 +144,20 @@ func _setup_world() -> void:
 			rect.size = Vector2((width + 8) * PlaceholderTileset.TILE_SIZE, 80)
 			shape_node.shape = rect
 
-	_place_enemy_spawner(game)
+	_place_enemy_spawners(game)
 
 
-func _place_enemy_spawner(game: Node) -> void:
+func _place_enemy_spawners(game: Node) -> void:
 	var structures := game.get_node_or_null("Structures") as Node2D
 	if structures == null:
 		return
 
 	var spawn_x := int(width / 2.0)
-	var left_x := _find_open_spawner_left(spawn_x)
+	_add_spawner(structures, _find_open_spawner_on_side(spawn_x, -1))
+	_add_spawner(structures, _find_open_spawner_on_side(spawn_x, 1))
+
+
+func _add_spawner(structures: Node2D, left_x: int) -> void:
 	var surface := _surface_y(left_x)
 	var width_tiles := PlaceholderSpawner.WIDTH_TILES
 	var left_center := map_to_local(Vector2i(left_x, surface))
@@ -164,21 +168,23 @@ func _place_enemy_spawner(game: Node) -> void:
 	spawner.global_position = to_global(foot)
 
 
-func _find_open_spawner_left(spawn_x: int) -> int:
-	var preferred := _spawner_column(spawn_x)
-	var found := _scan_open_spawner(spawn_x, preferred)
+func _find_open_spawner_on_side(spawn_x: int, side: int) -> int:
+	var extra := absi((_height_noise.seed >> (1 if side > 0 else 3))) % 24
+	var start := spawn_x + side * (MIN_SPAWNER_TILES + extra)
+	start = clampi(start, 6, width - 7)
+	var found := _scan_open_spawner_on_side(spawn_x, start, side)
 	if found != -999999:
 		return found
-	var other := spawn_x - (preferred - spawn_x)
-	found = _scan_open_spawner(spawn_x, other)
-	if found != -999999:
-		return found
-	return preferred
+	return clampi(spawn_x + side * MIN_SPAWNER_TILES, 6, width - 7)
 
 
-func _scan_open_spawner(spawn_x: int, start: int) -> int:
+func _scan_open_spawner_on_side(spawn_x: int, start: int, side: int) -> int:
 	for offset in width:
 		for candidate in [start + offset, start - offset]:
+			if side < 0 and candidate >= spawn_x:
+				continue
+			if side > 0 and candidate <= spawn_x:
+				continue
 			if absi(candidate - spawn_x) < MIN_SPAWNER_TILES:
 				continue
 			if _spawner_site_open(candidate):
@@ -212,22 +218,4 @@ func _has_cell(cell: Vector2i) -> bool:
 
 func _is_grass_cell(cell: Vector2i) -> bool:
 	return _has_cell(cell) and get_cell_atlas_coords(cell) == PlaceholderTileset.GRASS
-
-
-func _spawner_column(spawn_x: int) -> int:
-	var margin := 6
-	var side := 1 if (_height_noise.seed & 1) == 0 else -1
-	var extra := absi(_height_noise.seed >> 1) % 24
-	var x := spawn_x + side * (MIN_SPAWNER_TILES + extra)
-	x = clampi(x, margin, width - margin - 1)
-	if absi(x - spawn_x) >= MIN_SPAWNER_TILES:
-		return x
-
-	var left := spawn_x - MIN_SPAWNER_TILES
-	if left >= margin:
-		return left
-	var right := spawn_x + MIN_SPAWNER_TILES
-	if right <= width - margin - 1:
-		return right
-	return margin if spawn_x > int(width / 2.0) else width - margin - 1
 
