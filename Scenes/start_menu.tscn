@@ -1,0 +1,102 @@
+[gd_scene load_steps=3 format=3 uid="uid://cstartmenu00001"]
+
+[ext_resource type="Script" path="res://Scripts/start_menu.gd" id="1_start"]
+[ext_resource type="FontFile" path="res://Assets/fonts/PixelOperator8-Bold.ttf" id="2_font"]
+
+[node name="StartMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_start")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.08, 0.1, 0.12, 1)
+
+[node name="Center" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MainPanel" type="VBoxContainer" parent="Center"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Title" type="Label" parent="Center/MainPanel"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 16
+text = "Mikes Well Driller"
+horizontal_alignment = 1
+
+[node name="StartButton" type="Button" parent="Center/MainPanel"]
+custom_minimum_size = Vector2(220, 36)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 8
+text = "Start"
+
+[node name="SettingsButton" type="Button" parent="Center/MainPanel"]
+custom_minimum_size = Vector2(220, 36)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 8
+text = "Settings"
+
+[node name="SettingsPanel" type="VBoxContainer" parent="Center"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SettingsTitle" type="Label" parent="Center/SettingsPanel"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 16
+text = "Settings"
+horizontal_alignment = 1
+
+[node name="RemapHint" type="Label" parent="Center/SettingsPanel"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 8
+text = "Press a key or mouse button. Esc cancels."
+horizontal_alignment = 1
+
+[node name="BindRows" type="VBoxContainer" parent="Center/SettingsPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ResetButton" type="Button" parent="Center/SettingsPanel"]
+custom_minimum_size = Vector2(220, 32)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 8
+text = "Reset Defaults"
+
+[node name="BackButton" type="Button" parent="Center/SettingsPanel"]
+custom_minimum_size = Vector2(220, 32)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 8
+text = "Back"
+
+[connection signal="pressed" from="Center/MainPanel/StartButton" to="." method="_on_start_pressed"]
+[connection signal="pressed" from="Center/MainPanel/SettingsButton" to="." method="_on_settings_pressed"]
+[connection signal="pressed" from="Center/SettingsPanel/ResetButton" to="." method="_on_reset_pressed"]
+[connection signal="pressed" from="Center/SettingsPanel/BackButton" to="." method="_on_back_pressed"]
