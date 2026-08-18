@@ -7,6 +7,7 @@ const ACTION_DEFS: Array[Dictionary] = [
 	{"action": &"move_right", "label": "Move Right", "remappable": true},
 	{"action": &"jump", "label": "Jump", "remappable": true},
 	{"action": &"shoot", "label": "Shoot", "remappable": true},
+	{"action": &"interact", "label": "Interact", "remappable": true},
 	{"action": &"build_menu", "label": "Build", "remappable": true},
 	{"action": &"pause", "label": "Pause", "remappable": false},
 ]
@@ -38,6 +39,8 @@ func get_default_events(action: StringName) -> Array[InputEvent]:
 			return [_key(KEY_W), _key(KEY_SPACE)]
 		&"shoot":
 			return [_mouse(MOUSE_BUTTON_LEFT)]
+		&"interact":
+			return [_key(KEY_E)]
 		&"build_menu":
 			return [_key(KEY_B)]
 		&"pause":

@@ -7,12 +7,14 @@ const LIFETIME := 1.25
 var direction := Vector2.RIGHT
 var _ignore: Node
 var _spent := false
+var _damage := 1
 
 
-func setup(dir: Vector2, shooter: Node) -> void:
+func setup(dir: Vector2, shooter: Node, damage: int = 1) -> void:
 	direction = dir.normalized()
 	rotation = direction.angle()
 	_ignore = shooter
+	_damage = maxi(damage, 1)
 
 
 func _ready() -> void:
@@ -54,10 +56,10 @@ func _apply_hit(node: Node) -> void:
 	if _spent or node == _ignore:
 		return
 	_spent = true
-	# Friendly structures block shots but are not damaged by the player.
-	if node.is_in_group("defend_target") or node.is_in_group("wall"):
+	# Friendly structures / hires block shots but are not damaged by the player.
+	if node.is_in_group("defend_target") or node.is_in_group("wall") or node.is_in_group("hiree"):
 		queue_free()
 		return
 	if node.has_method("take_damage"):
-		node.take_damage(1)
+		node.take_damage(_damage)
 	queue_free()

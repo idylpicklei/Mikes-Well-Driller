@@ -144,6 +144,7 @@ func _setup_world() -> void:
 
 	_place_acid_pools(game)
 	_place_enemy_spawners(game)
+	_place_stranded_hirees(game)
 
 
 func _place_acid_pools(game: Node) -> void:
@@ -172,6 +173,33 @@ func _place_enemy_spawners(game: Node) -> void:
 	var spawn_x := int(width / 2.0)
 	_add_spawner(structures, _find_open_spawner_on_side(spawn_x, -1))
 	_add_spawner(structures, _find_open_spawner_on_side(spawn_x, 1))
+
+
+func _place_stranded_hirees(game: Node) -> void:
+	var structures := game.get_node_or_null("Structures") as Node2D
+	if structures == null:
+		return
+	# One stranded recruit near each alien ship — walk out from the hub to hire.
+	for ship in structures.get_children():
+		if not ship.is_in_group("alien_ship") and not ship.is_in_group("enemy_spawner"):
+			continue
+		if not ship is Node2D:
+			continue
+		_add_hiree_near(structures, ship as Node2D)
+
+
+func _add_hiree_near(structures: Node2D, ship: Node2D) -> void:
+	var ship_cell := local_to_map(to_local(ship.global_position))
+	var side := -1 if ship_cell.x < int(width / 2.0) else 1
+	# Stand on grass a few tiles toward the hub from the ship so Mike must walk out.
+	var tile_x := clampi(ship_cell.x - side * 6, 4, width - 5)
+	var surface := _surface_y(tile_x)
+	var foot := map_to_local(Vector2i(tile_x, surface)) + Vector2(0, -PlaceholderTileset.TILE_SIZE * 0.5)
+	var hiree := preload("res://Scenes/hiree.tscn").instantiate()
+	structures.add_child(hiree)
+	hiree.global_position = to_global(foot)
+	if hiree.has_method("roll_stats"):
+		hiree.roll_stats()
 
 
 func _add_spawner(structures: Node2D, left_x: int) -> void:

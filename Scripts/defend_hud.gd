@@ -6,6 +6,7 @@ const FONT_PATH := "res://Assets/fonts/PixelOperator8-Bold.ttf"
 @onready var _status: Label = %StatusLabel
 @onready var _mike_health: Label = %MikeHealthLabel
 @onready var _health: Label = %HealthLabel
+@onready var _crew: Label = %CrewLabel
 @onready var _water_bar: ProgressBar = %WaterBar
 @onready var _water_label: Label = %WaterLabel
 @onready var _gpm_label: Label = %GpmLabel
@@ -67,6 +68,7 @@ func _bind_player(player: Node) -> void:
 
 func _process(_delta: float) -> void:
 	_refresh_gpm()
+	_refresh_crew()
 
 
 func _refresh_gpm() -> void:
@@ -75,6 +77,26 @@ func _refresh_gpm() -> void:
 		if well.has_method("gallons_per_minute"):
 			total += float(well.gallons_per_minute())
 	_gpm_label.text = "%.1f gpm" % total
+
+
+func _refresh_crew() -> void:
+	if _crew == null:
+		return
+	var hired := 0
+	var parts: PackedStringArray = []
+	for node in get_tree().get_nodes_in_group("hiree"):
+		if not is_instance_valid(node):
+			continue
+		if node.has_method("is_hired") and node.is_hired():
+			hired += 1
+			var interval := 8
+			if node.has_method("upkeep_interval"):
+				interval = int(node.upkeep_interval())
+			parts.append("1/%ds" % interval)
+	if hired <= 0:
+		_crew.text = "Hired: 0"
+	else:
+		_crew.text = "Hired: %d · upkeep %s" % [hired, ", ".join(parts)]
 
 
 func _on_item_chosen(_category_id: StringName, item_id: StringName) -> void:
