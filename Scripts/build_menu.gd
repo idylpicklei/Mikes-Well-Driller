@@ -322,13 +322,22 @@ func _draw_detail_panel(center: Vector2, item_id: StringName, scale_t: float) ->
 
 	var panel_w := DETAIL_WIDTH
 	var panel_h := height
-	var origin := Vector2(
+	var margin := 8.0
+	# Prefer below the wheel; flip above if that would clip the bottom.
+	var below := Vector2(
 		center.x - panel_w * 0.5,
 		center.y + ITEM_OUTER * scale_t + 52.0
 	)
-	# Keep on-screen if the wheel is near the bottom.
-	if origin.y + panel_h > size.y - 8.0:
-		origin.y = center.y - ITEM_OUTER * scale_t - panel_h - 16.0
+	var above := Vector2(
+		center.x - panel_w * 0.5,
+		center.y - ITEM_OUTER * scale_t - panel_h - 16.0
+	)
+	var origin := below
+	if below.y + panel_h > size.y - margin:
+		origin = above
+	# Hard clamp so the card never clips the top/sides of the canvas.
+	origin.x = clampf(origin.x, margin, maxf(margin, size.x - panel_w - margin))
+	origin.y = clampf(origin.y, margin, maxf(margin, size.y - panel_h - margin))
 
 	var box := Rect2(origin, Vector2(panel_w, panel_h))
 	if _catalog_card_style:

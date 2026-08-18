@@ -140,15 +140,24 @@ func _refresh_ghost_at_mouse() -> void:
 		return
 	var mouse := get_global_mouse_position()
 	global_position = _snap_position(mouse)
-	_valid = _is_valid_position(mouse)
+	# Validate at the snapped origin (same point place uses) so occupancy goes red immediately.
+	_valid = _is_valid_position(mouse) and _is_valid_origin(global_position)
 	_apply_ghost_tint()
 	_update_efficiency_popup()
 	if _ghost:
 		_ghost.visible = true
+	queue_redraw()
 
 
 func _apply_ghost_tint() -> void:
-	_ghost.modulate = Color(0.45, 1, 0.55, 0.65) if _valid else Color(1, 0.4, 0.4, 0.65)
+	if _ghost == null:
+		return
+	# Strong red when blocked (occupancy / no grass / can't afford) so refuse is never silent.
+	if _valid:
+		_ghost.modulate = Color(0.45, 1.0, 0.55, 0.7)
+	else:
+		_ghost.modulate = Color(1.0, 0.25, 0.25, 0.85)
+	_ghost.visible = is_placing
 
 
 func _mark_invalid_ghost() -> void:
@@ -471,6 +480,13 @@ func _update_efficiency_popup() -> void:
 
 
 func _draw() -> void:
+	# Occupancy / invalid: draw a clear red footprint so refuse is never silent.
+	if is_placing and not _valid and not _pending.is_empty():
+		var size := _pending_footprint_size()
+		var rect := Rect2(Vector2(-size.x * 0.5, -float(size.y)), Vector2(size))
+		draw_rect(rect, Color(1.0, 0.2, 0.2, 0.22))
+		draw_rect(rect, Color(1.0, 0.35, 0.3, 0.95), false, 2.0)
+
 	if not _show_efficiency or _font == null:
 		return
 
