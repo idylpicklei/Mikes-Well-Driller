@@ -9,7 +9,7 @@ const INTERACT_RANGE := 36.0
 const ARRIVE_DIST := 10.0
 const WATER_INTERVALS := [12.0, 8.0, 5.0]
 const HP_PER_STRENGTH := 10
-const LABEL_OFFSET := Vector2(0, -28)
+const LABEL_OFFSET := Vector2(0, -40)
 
 signal hire_state_changed
 
