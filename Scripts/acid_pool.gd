@@ -21,28 +21,31 @@ func _ready() -> void:
 		body_exited.connect(_on_body_exited)
 
 
-func setup(size_px: Vector2) -> void:
+func setup(size_px: Vector2, inland_overlap_px: float = 0.0, inland: float = 0.0) -> void:
 	_build_ocean_visual(size_px)
 	var tile := float(PlaceholderTileset.TILE_SIZE)
+	var overlap := maxf(inland_overlap_px, 0.0)
+	var inland_dir := 0.0 if is_zero_approx(inland) else signf(inland)
 	# Damage volume covers the water body plus a band above the surface for standing chars.
 	var hurt_h := size_px.y + HURT_ABOVE
 	var shape_node := get_node_or_null("CollisionShape2D") as CollisionShape2D
 	if shape_node:
 		var rect := RectangleShape2D.new()
-		rect.size = Vector2(size_px.x, hurt_h)
+		rect.size = Vector2(size_px.x + overlap, hurt_h)
 		shape_node.shape = rect
 		# Node origin is visual center; shift hurt box up so it clears the waterline.
-		shape_node.position = Vector2(0.0, -HURT_ABOVE * 0.5)
+		# Overlap extends inland under the beach so footing/DOT stay continuous.
+		shape_node.position = Vector2(inland_dir * overlap * 0.5, -HURT_ABOVE * 0.5)
 	# Shallow toxic footing so Mike can walk in and leave (DOT, not a pit).
 	var floor_body := get_node_or_null("Floor") as StaticBody2D
 	if floor_body:
 		var floor_shape := floor_body.get_node_or_null("CollisionShape2D") as CollisionShape2D
 		if floor_shape:
 			var floor_rect := RectangleShape2D.new()
-			floor_rect.size = Vector2(size_px.x, tile)
+			floor_rect.size = Vector2(size_px.x + overlap, tile)
 			floor_shape.shape = floor_rect
 			# Align floor top with the ocean surface (top of the visual).
-			floor_shape.position = Vector2(0.0, -size_px.y * 0.5 + tile * 0.5)
+			floor_shape.position = Vector2(inland_dir * overlap * 0.5, -size_px.y * 0.5 + tile * 0.5)
 
 
 func _build_ocean_visual(size_px: Vector2) -> void:

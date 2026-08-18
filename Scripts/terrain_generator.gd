@@ -3,7 +3,9 @@ extends TileMapLayer
 ## Wide heightmap terrain. Tweak in the inspector; art can replace the
 ## placeholder atlas without changing these tile ids.
 @export var world_seed: int = 0
-@export var width: int = 480
+## Short enough that each shore is a brief run past the far ship (not ~240 empty tiles).
+## Sized for MIN_SPAWNER_TILES (100) + jitter (~24) + ship footprint + ~12-tile shore run per side.
+@export var width: int = 280
 @export var bedrock_y: int = 42
 @export var base_surface_y: int = 10
 @export var hill_amplitude: int = 7
@@ -22,6 +24,10 @@ const OCEAN_DEPTH_TILES := 6
 ## Extra camera pad past the ocean so the shore is not clipped at the limit.
 const CAMERA_SHORE_PAD_TILES := 4
 const SHORE_MARGIN_TILES := BEACH_TILES + OCEAN_TILES
+## Flat approach onto each shore so the last grass column meets beach at the same Y.
+const EDGE_FLATTEN_TILES := 8
+## Tuck beach/ocean floor collision under the prior strip so physics cannot fall through the seam.
+const SHORE_OVERLAP_TILES := 1
 
 var spawn_position := Vector2.ZERO
 
@@ -78,9 +84,18 @@ func _generate() -> void:
 	spawn_position = map_to_local(spawn_cell) + Vector2(0, -8)
 
 
-func _surface_y(x: int) -> int:
+func _raw_surface_y(x: int) -> int:
 	var n := _height_noise.get_noise_1d(x)
 	return base_surface_y + roundi(n * hill_amplitude)
+
+
+func _surface_y(x: int) -> int:
+	# Keep the last few columns flat and flush with the beach strip (no cliff into void).
+	if x < EDGE_FLATTEN_TILES:
+		return _raw_surface_y(0)
+	if x >= width - EDGE_FLATTEN_TILES:
+		return _raw_surface_y(width - 1)
+	return _raw_surface_y(x)
 
 
 func _atlas_at(x: int, y: int, surface: int) -> Vector2i:
@@ -131,7 +146,8 @@ func _setup_world() -> void:
 	if player:
 		player.global_position = spawn_position
 		player.spawn_position = spawn_position
-		player.fall_y = float((bedrock_y + 6) * PlaceholderTileset.TILE_SIZE)
+		# Below bedrock + ocean depth so shore / acid-floor walkers never trip fall_y.
+		player.fall_y = float((bedrock_y + OCEAN_DEPTH_TILES + 8) * PlaceholderTileset.TILE_SIZE)
 
 		var camera := player.get_node_or_null("Camera2D") as Camera2D
 		if camera:
@@ -147,30 +163,35 @@ func _setup_world() -> void:
 
 	var killzone := game.get_node_or_null("Killzone") as Area2D
 	if killzone:
-		killzone.position = Vector2(width * PlaceholderTileset.TILE_SIZE * 0.5, (bedrock_y + 5) * PlaceholderTileset.TILE_SIZE)
+		# Deep under bedrock only — do not raise into the shore walk band.
+		var tile := PlaceholderTileset.TILE_SIZE
+		var shore_pad := SHORE_MARGIN_TILES * tile
+		killzone.position = Vector2(width * tile * 0.5, (bedrock_y + OCEAN_DEPTH_TILES + 6) * tile)
 		var shape_node := killzone.get_node_or_null("CollisionShape2D") as CollisionShape2D
 		if shape_node:
 			var rect := RectangleShape2D.new()
-			rect.size = Vector2((width + 8) * PlaceholderTileset.TILE_SIZE, 80)
+			# Cover land + shores horizontally; Y stays far below walkable beach/ocean floor.
+			rect.size = Vector2(width * tile + shore_pad * 2.0 + 8.0 * tile, 80)
 			shape_node.shape = rect
 
-	_place_shores(game)
+	_place_shores()
 	_place_enemy_spawners(game)
 	_place_stranded_hirees(game)
 
 
-func _place_shores(game: Node) -> void:
+func _place_shores() -> void:
 	# Left edge: land ends at x=0 → beach outward → acid ocean.
-	_add_shore(game, 0, -1.0)
+	_add_shore(0, -1.0)
 	# Right edge: land ends at width → beach outward → acid ocean.
-	_add_shore(game, width, 1.0)
+	_add_shore(width, 1.0)
 
 
-func _add_shore(game: Node, edge_cell_x: int, outward: float) -> void:
+func _add_shore(edge_cell_x: int, outward: float) -> void:
 	var tile := float(PlaceholderTileset.TILE_SIZE)
 	var beach_w := float(BEACH_TILES) * tile
 	var ocean_w := float(OCEAN_TILES) * tile
 	var ocean_h := float(OCEAN_DEPTH_TILES) * tile
+	var overlap := float(SHORE_OVERLAP_TILES) * tile
 	# Align to TileMapLayer local space (tile centers), not raw cell*size.
 	var edge_cell := clampi(edge_cell_x, 0, width - 1)
 	var surface := _surface_y(edge_cell)
@@ -179,21 +200,23 @@ func _add_shore(game: Node, edge_cell_x: int, outward: float) -> void:
 	var edge_px := 0.0 if outward < 0.0 else float(width) * tile
 	var surface_top := edge_center.y - tile * 0.5
 
+	# Parent under this TileMapLayer so shore coords share terrain space (no Game transform drift).
 	var beach := preload("res://Scenes/beach_strip.tscn").instantiate()
-	game.add_child(beach)
+	add_child(beach)
 	beach.z_index = 0
 	# Beach sits on the grass surface, extending outward from the map edge.
 	beach.position = Vector2(edge_px, surface_top)
 	if beach.has_method("setup"):
-		beach.setup(outward)
+		beach.setup(outward, overlap)
 
 	var ocean_center_x := edge_px + outward * (beach_w + ocean_w * 0.5)
 	var ocean := preload("res://Scenes/acid_pool.tscn").instantiate()
-	game.add_child(ocean)
+	add_child(ocean)
 	ocean.z_index = 0
 	ocean.position = Vector2(ocean_center_x, surface_top + ocean_h * 0.5)
 	if ocean.has_method("setup"):
-		ocean.setup(Vector2(ocean_w, ocean_h))
+		# inland is opposite of outward: tuck floor under the scum tile.
+		ocean.setup(Vector2(ocean_w, ocean_h), overlap, -outward)
 
 
 func _place_enemy_spawners(game: Node) -> void:
@@ -294,4 +317,3 @@ func _has_cell(cell: Vector2i) -> bool:
 
 func _is_grass_cell(cell: Vector2i) -> bool:
 	return _has_cell(cell) and PlaceholderTileset.is_grass(get_cell_atlas_coords(cell))
-
