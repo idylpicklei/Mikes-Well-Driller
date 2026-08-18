@@ -8,7 +8,7 @@ static func default_categories() -> Array[Dictionary]:
 		{
 			"id": &"well",
 			"label": "Well",
-			"color": Color("6b8e9f"),
+			"color": Color("4a6570"),
 			"items": [
 				{"id": &"well", "label": "Well"},
 			],
@@ -16,7 +16,7 @@ static func default_categories() -> Array[Dictionary]:
 		{
 			"id": &"drill",
 			"label": "Drill",
-			"color": Color("d98a2b"),
+			"color": Color("a06a28"),
 			"items": [
 				{"id": &"basic_drill", "label": "Basic Drill"},
 			],
@@ -24,7 +24,7 @@ static func default_categories() -> Array[Dictionary]:
 		{
 			"id": &"defence",
 			"label": "Defence",
-			"color": Color("3d6ea8"),
+			"color": Color("2e5478"),
 			"items": [
 				{"id": &"wall", "label": "Wall"},
 				{"id": &"turret", "label": "Turret"},
@@ -33,7 +33,7 @@ static func default_categories() -> Array[Dictionary]:
 		{
 			"id": &"utility",
 			"label": "Utility",
-			"color": Color("2f9e8f"),
+			"color": Color("247068"),
 			"items": [
 				{"id": &"main_hub", "label": "Main Hub"},
 			],
