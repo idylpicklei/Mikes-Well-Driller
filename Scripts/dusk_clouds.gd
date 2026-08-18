@@ -1,8 +1,8 @@
 extends Node2D
 
 ## Dusk wasteland clouds. Behind terrain/Mike, in front of clear color.
-## Slow horizontal drift + gentle X parallax. Vertical follow is heavily
-## dampened so jumps don't make the sky lurch (still moves a little).
+## Slow horizontal drift + gentle X parallax. Cloud Y is world-locked so
+## jumps do not lurch the sky (almost no vertical motion on hop).
 
 const CLOUD_PATHS: PackedStringArray = [
 	"res://Assets/sprites/cloud_a.png",
@@ -10,20 +10,20 @@ const CLOUD_PATHS: PackedStringArray = [
 	"res://Assets/sprites/cloud_c.png",
 ]
 
-## Depth bands. parallax_y is a small fraction of X so hop bob is soft, not locked.
+## Depth bands: X parallax only. Y is locked to spawn altitude + band bias.
 const BANDS := [
-	{"parallax_x": 0.18, "parallax_y": 0.035, "drift": 6.5, "y_bias": -36.0, "modulate": Color(0.72, 0.58, 0.52, 0.82), "count": 11},
-	{"parallax_x": 0.10, "parallax_y": 0.020, "drift": 3.6, "y_bias": -72.0, "modulate": Color(0.55, 0.42, 0.40, 0.60), "count": 10},
-	{"parallax_x": 0.04, "parallax_y": 0.010, "drift": 1.6, "y_bias": -112.0, "modulate": Color(0.42, 0.32, 0.34, 0.46), "count": 9},
+	{"parallax_x": 0.18, "drift": 6.5, "y": -36.0, "modulate": Color(0.72, 0.58, 0.52, 0.82), "count": 11},
+	{"parallax_x": 0.10, "drift": 3.6, "y": -72.0, "modulate": Color(0.55, 0.42, 0.40, 0.60), "count": 10},
+	{"parallax_x": 0.04, "drift": 1.6, "y": -112.0, "modulate": Color(0.42, 0.32, 0.34, 0.46), "count": 9},
 ]
 
 const SPAN := 2600.0
 
 var _textures: Array[Texture2D] = []
 var _bands: Array[Dictionary] = []
-## Baseline camera Y at spawn — hop delta is measured from this and scaled down.
-var _y_baseline := 0.0
-var _baseline_ready := false
+## Stable sky altitude — set once from spawn; never tracks jump/camera Y.
+var _sky_anchor_y := 0.0
+var _anchor_ready := false
 
 
 func _ready() -> void:
@@ -34,7 +34,7 @@ func _ready() -> void:
 	for spec in BANDS:
 		_add_band(spec)
 	set_process(true)
-	call_deferred("_capture_y_baseline")
+	call_deferred("_lock_sky_anchor")
 	_update_bands(0.0)
 
 
@@ -48,15 +48,28 @@ func _load_textures() -> void:
 			push_warning("DuskClouds: missing texture %s" % path)
 
 
-func _capture_y_baseline() -> void:
-	_y_baseline = _camera_center().y
-	_baseline_ready = true
-	_update_bands(0.0)
+func _lock_sky_anchor() -> void:
+	var terrain := get_tree().get_first_node_in_group("terrain")
+	if terrain != null and "spawn_position" in terrain:
+		_sky_anchor_y = float(terrain.spawn_position.y)
+		_anchor_ready = true
+		_update_bands(0.0)
+		return
+	var player := get_tree().get_first_node_in_group("player") as Node2D
+	if player:
+		_sky_anchor_y = player.global_position.y
+		_anchor_ready = true
+		_update_bands(0.0)
+		return
+	var cam := get_viewport().get_camera_2d()
+	if cam:
+		_sky_anchor_y = cam.get_screen_center_position().y
+		_anchor_ready = true
 
 
 func _process(delta: float) -> void:
-	if not _baseline_ready:
-		_capture_y_baseline()
+	if not _anchor_ready:
+		_lock_sky_anchor()
 	_update_bands(delta)
 
 
@@ -65,7 +78,7 @@ func _add_band(spec: Dictionary) -> void:
 		return
 
 	var count: int = int(spec["count"])
-	var y_bias: float = float(spec["y_bias"])
+	var band_y: float = float(spec["y"])
 	var base_mod: Color = spec["modulate"]
 	var sprites: Array[Sprite2D] = []
 	var slots: Array[Dictionary] = []
@@ -73,9 +86,9 @@ func _add_band(spec: Dictionary) -> void:
 	# Irregular gaps so a plateau never reads as one repeating stamp.
 	var cursor := 0.0
 	for i in count:
-		var path_i := (i * 7 + int(y_bias) + count) % _textures.size()
+		var path_i := (i * 7 + int(band_y) + count) % _textures.size()
 		var tex: Texture2D = _textures[path_i]
-		# Mix the other sheets so bands aren't mono-texture.
+		# Mix cloud_a/b/c so bands aren't mono-texture.
 		if i % 3 == 1:
 			tex = _textures[(path_i + 1) % _textures.size()]
 		elif i % 3 == 2:
@@ -112,38 +125,35 @@ func _add_band(spec: Dictionary) -> void:
 		"sprites": sprites,
 		"slots": slots,
 		"parallax_x": float(spec["parallax_x"]),
-		"parallax_y": float(spec["parallax_y"]),
 		"drift": float(spec["drift"]),
-		"y_bias": y_bias,
+		"y": band_y,
 		"width": width,
 		"phase": randf() * width,
 	})
 
 
-func _camera_center() -> Vector2:
+func _camera_x() -> float:
 	var cam := get_viewport().get_camera_2d()
 	if cam:
-		return cam.get_screen_center_position()
+		return cam.get_screen_center_position().x
 	var player := get_tree().get_first_node_in_group("player") as Node2D
 	if player:
-		return player.global_position + Vector2(0, -48)
-	return Vector2.ZERO
+		return player.global_position.x
+	return 0.0
 
 
 func _update_bands(delta: float) -> void:
-	var center := _camera_center()
-	var cam_x := center.x
-	# Soft vertical: keep most of the sky at the spawn baseline, add a little hop follow.
-	var baseline := _y_baseline if _baseline_ready else center.y
-	var hop_delta := center.y - baseline
+	var cam_x := _camera_x()
+	# Locked world Y — camera/player hop never moves the sky vertically.
+	var sky_y := _sky_anchor_y if _anchor_ready else 0.0
 
 	for band in _bands:
 		band["phase"] = float(band["phase"]) + float(band["drift"]) * delta
 		var width: float = maxf(float(band["width"]), 1.0)
 		var phase: float = fposmod(float(band["phase"]), width)
 		var parallax_x: float = float(band["parallax_x"])
-		var parallax_y: float = float(band["parallax_y"])
-		var band_y := baseline + float(band["y_bias"]) + hop_delta * parallax_y
+		var band_y: float = sky_y + float(band["y"])
+		# Gentle horizontal follow only (distant layers lag).
 		var follow_x := cam_x * parallax_x
 		var sprites: Array = band["sprites"]
 		var slots: Array = band["slots"]
