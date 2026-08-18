@@ -5,8 +5,8 @@ extends StaticBody2D
 const ENEMY_SCENE := preload("res://Scenes/enemy.tscn")
 ## Steady sandbox cadence after the opening grace window.
 const SPAWN_INTERVAL := 8.0
-## Delay before the first alien leaves each ship (opening is playable).
-const FIRST_SPAWN_DELAY := 22.0
+## Dylan: five minutes to explore / place a hub before the first alien pack.
+const FIRST_SPAWN_DELAY := 300.0
 const MAX_ALIVE := 4
 const MAX_HEALTH := 12
 
