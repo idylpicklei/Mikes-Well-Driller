@@ -19,6 +19,7 @@ var _pending: Dictionary = {}
 var _valid := false
 ## Ignore the catalog LMB that armed us — never blocks cancel (RMB / B).
 var _wait_for_release := false
+var _rmb_held := false
 var _popup_boost := 0
 var _show_efficiency := false
 
@@ -64,6 +65,7 @@ func _start_placement(item_id: StringName, def: Dictionary) -> void:
 	_pending = def
 	is_placing = true
 	_wait_for_release = true
+	_rmb_held = Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
 	_apply_ghost(def)
 	_ghost.visible = true
 	z_index = 20
@@ -79,8 +81,11 @@ func _cancel_placement() -> void:
 	_pending_item = &""
 	_pending = {}
 	_wait_for_release = false
+	_rmb_held = false
 	_ghost.visible = false
 	_show_efficiency = false
+	# Leaving place mode must return LMB to shoot for every placeable.
+	BuildMenu.block_shoot = false
 	global_position = Vector2.ZERO
 	z_index = 0
 	set_process(false)
@@ -124,13 +129,25 @@ func _process(_delta: float) -> void:
 	if not is_placing:
 		return
 	# Placement itself must not run while the B-catalog owns the pause freeze.
-	if BuildMenu.is_open or PauseMenu.is_open:
+	if BuildMenu.is_open:
+		return
+	# Esc-pause while armed: drop place mode so resume is never stuck in PLACE X.
+	if PauseMenu.is_open:
+		_cancel_placement()
 		return
 	_resolve_terrain()
 	if _terrain == null:
 		return
 	if _wait_for_release and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 		_wait_for_release = false
+
+	# Poll RMB — web/context-menu paths can swallow the button event before _unhandled_input.
+	var rmb := Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
+	if rmb and not _rmb_held:
+		_cancel_placement()
+		_rmb_held = rmb
+		return
+	_rmb_held = rmb
 
 	_refresh_ghost_at_mouse()
 
@@ -168,19 +185,23 @@ func _mark_invalid_ghost() -> void:
 	queue_redraw()
 
 
-func _unhandled_input(event: InputEvent) -> void:
+## Use _input (not only _unhandled_input) so RMB/Esc/B cancel cannot be swallowed by GUI.
+func _input(event: InputEvent) -> void:
 	if not is_placing:
 		return
-	if BuildMenu.is_open or PauseMenu.is_open:
-		_cancel_placement()
+	if BuildMenu.is_open:
 		return
 
-	# Cancel always works — even before the arming LMB is released.
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
 		_cancel_placement()
 		get_viewport().set_input_as_handled()
 		return
-	if InputBindings.is_build_toggle_event(event) or event.is_action_pressed("pause"):
+	if InputBindings.is_build_toggle_event(event):
+		_cancel_placement()
+		get_viewport().set_input_as_handled()
+		return
+	if event.is_action_pressed("pause") and not event.is_echo():
+		# Cancel place first; let PauseMenu open on a subsequent Esc if desired.
 		_cancel_placement()
 		get_viewport().set_input_as_handled()
 		return
@@ -189,7 +210,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		# Re-snap + re-validate at click time so ghost never lies green on a refused click.
 		_refresh_ghost_at_mouse()
 		if _valid:
 			_place_item()

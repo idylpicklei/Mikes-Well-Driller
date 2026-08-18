@@ -15,6 +15,8 @@ const PLAYER_CHASE_RANGE := 100.0
 const PLAYER_DAMAGE := 10
 const PLAYER_ATTACK_COOLDOWN := 0.8
 const PLAYER_TOUCH_RANGE := 22.0
+## Readable at camera zoom 2 without eating the 32px sheet layout.
+const VISUAL_SCALE := 1.35
 
 var max_health := MAX_HEALTH
 var health := MAX_HEALTH
@@ -35,24 +37,30 @@ func configure(hp: int) -> void:
 
 func _ready() -> void:
 	add_to_group("enemy")
-	z_index = 2
+	z_index = 3
 	_sprite = get_node_or_null("Sprite2D") as Sprite2D
-	if _sprite:
-		_sprite.texture = PlaceholderEnemy.create_texture()
-		_sprite.position = PlaceholderEnemy.SPRITE_OFFSET
-		_sprite.hframes = PlaceholderEnemy.FRAME_COUNT
-		_sprite.vframes = 1
-		_sprite.frame = 0
-		_sprite.centered = true
-		_sprite.visible = true
-		if max_health > 1:
-			# Tough enemies read slightly darker so 2-HP is noticeable without new art.
-			_sprite.modulate = Color(0.82, 0.72, 0.72, 1.0)
+	if _sprite == null:
+		_sprite = Sprite2D.new()
+		_sprite.name = "Sprite2D"
+		add_child(_sprite)
+	_sprite.texture = PlaceholderEnemy.create_texture()
+	_sprite.centered = true
+	_sprite.position = PlaceholderEnemy.SPRITE_OFFSET * VISUAL_SCALE
+	_sprite.scale = Vector2(VISUAL_SCALE, VISUAL_SCALE)
+	_sprite.hframes = PlaceholderEnemy.FRAME_COUNT
+	_sprite.vframes = 1
+	_sprite.frame = 0
+	_sprite.visible = true
+	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	if max_health > 1:
+		# Tough enemies read slightly darker so 2-HP is noticeable without new art.
+		_sprite.modulate = Color(0.82, 0.72, 0.72, 1.0)
+	else:
+		_sprite.modulate = Color.WHITE
 	_apply_footprint_collision()
 	# Kick the walk sheet immediately so a spawn never looks like a static prop.
 	_walk_phase = randf() * float(PlaceholderEnemy.FRAME_COUNT)
-	if _sprite:
-		_sprite.frame = int(_walk_phase) % PlaceholderEnemy.FRAME_COUNT
+	_sprite.frame = int(_walk_phase) % PlaceholderEnemy.FRAME_COUNT
 
 
 func _apply_footprint_collision() -> void:
@@ -93,14 +101,18 @@ func _physics_process(delta: float) -> void:
 func _update_walk_anim(delta: float, dir: float) -> void:
 	if _sprite == null:
 		return
+	# Keep sheet wired — never drop back to a single static frame.
+	if _sprite.hframes != PlaceholderEnemy.FRAME_COUNT:
+		_sprite.hframes = PlaceholderEnemy.FRAME_COUNT
+		_sprite.vframes = 1
 	if dir != 0.0:
 		_sprite.flip_h = dir < 0.0
 	# Always advance the 4-frame sheet — never leave a frozen statue by the hub.
-	# Full walk rate when moving or intending to move; slower idle bob when stopped.
 	var moving := absf(get_real_velocity().x) > 2.0 or dir != 0.0
-	var fps := PlaceholderEnemy.WALK_FPS if moving else PlaceholderEnemy.WALK_FPS * 0.4
+	var fps := PlaceholderEnemy.WALK_FPS if moving else PlaceholderEnemy.WALK_FPS * 0.45
 	_walk_phase += delta * fps
 	_sprite.frame = int(_walk_phase) % PlaceholderEnemy.FRAME_COUNT
+	_sprite.visible = true
 
 
 func take_damage(amount: int) -> void:
