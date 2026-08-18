@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://cdefendhud00001"]
+[gd_scene load_steps=4 format=3 uid="uid://cdefendhud00001"]
 
 [ext_resource type="Script" path="res://Scripts/defend_hud.gd" id="1_hud"]
 
@@ -12,17 +12,6 @@ border_color = Color(0.15, 0.22, 0.3, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_water_fill"]
 bg_color = Color(0.24, 0.55, 0.82, 1)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gold_bg"]
-bg_color = Color(0.12, 0.1, 0.06, 0.92)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.35, 0.28, 0.12, 1)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gold_fill"]
-bg_color = Color(0.85, 0.7, 0.22, 1)
 
 [node name="DefendHudLayer" type="CanvasLayer"]
 layer = 10
@@ -88,36 +77,6 @@ custom_minimum_size = Vector2(72, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 10
 text = "0.0 gpm"
-horizontal_alignment = 2
-vertical_alignment = 1
-
-[node name="GoldRow" type="HBoxContainer" parent="DefendHud/Margin/VBox"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="GoldTitle" type="Label" parent="DefendHud/Margin/VBox/GoldRow"]
-custom_minimum_size = Vector2(56, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 10
-text = "Gold"
-vertical_alignment = 1
-
-[node name="GoldBar" type="ProgressBar" parent="DefendHud/Margin/VBox/GoldRow"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(220, 14)
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_styles/background = SubResource("StyleBoxFlat_gold_bg")
-theme_override_styles/fill = SubResource("StyleBoxFlat_gold_fill")
-max_value = 1.0
-show_percentage = false
-
-[node name="GoldLabel" type="Label" parent="DefendHud/Margin/VBox/GoldRow"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 10
-text = "0 gold"
 horizontal_alignment = 2
 vertical_alignment = 1
 

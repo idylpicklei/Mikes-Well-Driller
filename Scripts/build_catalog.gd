@@ -27,6 +27,7 @@ static func default_categories() -> Array[Dictionary]:
 			"color": Color("3d6ea8"),
 			"items": [
 				{"id": &"wall", "label": "Wall"},
+				{"id": &"turret", "label": "Turret"},
 			],
 		},
 		{
@@ -80,6 +81,15 @@ static func placeable(item_id: StringName) -> Dictionary:
 				"height": PlaceholderWall.HEIGHT_TILES,
 				"sprite_offset": PlaceholderWall.SPRITE_OFFSET,
 				"texture": PlaceholderWall.create_texture(),
+			}
+		&"turret":
+			return {
+				"scene": preload("res://Scenes/turret.tscn"),
+				"cost_water": 15,
+				"width": PlaceholderTurret.WIDTH_TILES,
+				"height": PlaceholderTurret.HEIGHT_TILES,
+				"sprite_offset": PlaceholderTurret.SPRITE_OFFSET,
+				"texture": PlaceholderTurret.create_texture(),
 			}
 		_:
 			return {}

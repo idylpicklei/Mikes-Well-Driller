@@ -9,8 +9,6 @@ const FONT_PATH := "res://Assets/fonts/PixelOperator8-Bold.ttf"
 @onready var _water_bar: ProgressBar = %WaterBar
 @onready var _water_label: Label = %WaterLabel
 @onready var _gpm_label: Label = %GpmLabel
-@onready var _gold_bar: ProgressBar = %GoldBar
-@onready var _gold_label: Label = %GoldLabel
 @onready var _game_over: ColorRect = %GameOver
 @onready var _menu_button: Button = %MenuButton
 
@@ -27,11 +25,8 @@ func _ready() -> void:
 	_set_idle_status()
 	_on_wave_changed(WaveDirector.wave)
 	_refresh_water(GameResources.water, GameResources.water_max)
-	_refresh_gold(GameResources.gold)
 	if not GameResources.water_changed.is_connected(_refresh_water):
 		GameResources.water_changed.connect(_refresh_water)
-	if not GameResources.gold_changed.is_connected(_refresh_gold):
-		GameResources.gold_changed.connect(_refresh_gold)
 	if not WaveDirector.wave_changed.is_connected(_on_wave_changed):
 		WaveDirector.wave_changed.connect(_on_wave_changed)
 	_refresh_gpm()
@@ -91,6 +86,9 @@ func _on_item_chosen(_category_id: StringName, item_id: StringName) -> void:
 	elif item_id == &"wall":
 		var cost := int(BuildCatalog.placeable(&"wall").get("cost_water", 0))
 		_status.text = "Place Wall (%d gal): click ground, right-click cancel" % cost
+	elif item_id == &"turret":
+		var cost := int(BuildCatalog.placeable(&"turret").get("cost_water", 0))
+		_status.text = "Place Turret (%d gal): click ground, right-click cancel" % cost
 
 
 func _on_hub_placed(hub: Node2D) -> void:
@@ -160,9 +158,3 @@ func _refresh_water(current: int, maximum: int) -> void:
 	_water_bar.max_value = maximum
 	_water_bar.value = current
 	_water_label.text = "%d / %d gal" % [current, maximum]
-
-
-func _refresh_gold(current: int) -> void:
-	_gold_bar.max_value = 1.0
-	_gold_bar.value = 1.0 if current > 0 else 0.0
-	_gold_label.text = "%d gold" % current
