@@ -72,7 +72,8 @@ func _start_placement(item_id: StringName, def: Dictionary) -> void:
 	_rmb_held = Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
 	_apply_ghost(def)
 	_ghost.visible = true
-	z_index = 20
+	# Sit under structure sprites (wells z=2) so the real building still reads through/over the ghost.
+	z_index = 1
 	set_process(true)
 	# Snap ghost under the cursor immediately — don't wait a process tick.
 	_refresh_ghost_at_mouse()
@@ -176,13 +177,15 @@ func _apply_ghost_tint() -> void:
 		return
 	# Strong red when blocked (occupancy / no grass / can't afford) so refuse is never silent.
 	if _valid:
-		_ghost.modulate = Color(0.45, 1.0, 0.55, 0.7)
+		_ghost.modulate = Color(0.45, 1.0, 0.55, 0.55)
+		_ghost.visible = is_placing
+	elif _blocked_by_existing_building():
+		# Ghost under the real sprite (placer z < well z); keep a light tint so both read.
+		_ghost.modulate = Color(1.0, 0.3, 0.28, 0.35)
 		_ghost.visible = is_placing
 	else:
-		_ghost.modulate = Color(1.0, 0.25, 0.25, 0.85)
-		# Over an already-placed building: keep the real sprite visible.
-		# Red footprint from _draw still shows invalid occupancy; ghost stays on empty ground.
-		_ghost.visible = is_placing and not _blocked_by_existing_building()
+		_ghost.modulate = Color(1.0, 0.25, 0.25, 0.7)
+		_ghost.visible = is_placing
 
 
 func _blocked_by_existing_building() -> bool:
