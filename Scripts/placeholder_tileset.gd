@@ -1,10 +1,12 @@
 class_name PlaceholderTileset
 extends RefCounted
 
-## Colored 16x16 tiles. Swap the atlas later without changing tile order:
-## 0 grass, 1 dirt, 2 dirt dark, 3 stone, 4 stone dark, 5 bedrock
+## Colored 16x16 tiles. Atlas is 6 columns × 3 rows (96×48).
+## Columns (do not reorder): 0 grass, 1 dirt, 2 dirt dark, 3 stone, 4 stone dark, 5 bedrock
+## Rows 1–2 are visual variants of the same type; row 0 alone matches legacy ids.
 const TILE_SIZE := 16
 const TILE_COUNT := 6
+const VARIANT_ROWS := 3
 
 const GRASS := Vector2i(0, 0)
 const DIRT := Vector2i(1, 0)
@@ -42,26 +44,46 @@ static func build(texture: Texture2D = null) -> TileSet:
 		Vector2(half, half),
 		Vector2(-half, half),
 	])
-	for i in TILE_COUNT:
-		var coords := Vector2i(i, 0)
-		atlas.create_tile(coords)
-		var tile: TileData = atlas.get_tile_data(coords, 0)
-		tile.add_collision_polygon(0)
-		tile.set_collision_polygon_points(0, 0, collision)
+	for row in VARIANT_ROWS:
+		for i in TILE_COUNT:
+			var coords := Vector2i(i, row)
+			atlas.create_tile(coords)
+			var tile: TileData = atlas.get_tile_data(coords, 0)
+			tile.add_collision_polygon(0)
+			tile.set_collision_polygon_points(0, 0, collision)
 	return tileset
 
 
+## Atlas column id 0–5; ignores variant row.
+static func type_id(coords: Vector2i) -> int:
+	return coords.x
+
+
+static func is_grass(coords: Vector2i) -> bool:
+	return coords.x == GRASS.x
+
+
+## Deterministic blend across rows 0–2 from world position + seed.
+static func variant_coords(column: int, cell_x: int, cell_y: int, world_seed: int) -> Vector2i:
+	var h := int(hash(Vector3i(cell_x, cell_y, world_seed ^ (column * 131))))
+	var row := absi(h) % VARIANT_ROWS
+	return Vector2i(column, row)
+
+
 static func _make_atlas() -> Image:
-	var image := Image.create(TILE_SIZE * TILE_COUNT, TILE_SIZE, false, Image.FORMAT_RGBA8)
-	for i in TILE_COUNT:
-		_paint_tile(image, i, _COLORS[i])
+	var image := Image.create(TILE_SIZE * TILE_COUNT, TILE_SIZE * VARIANT_ROWS, false, Image.FORMAT_RGBA8)
+	for row in VARIANT_ROWS:
+		for i in TILE_COUNT:
+			_paint_tile(image, i, row, _COLORS[i])
 	return image
 
 
-static func _paint_tile(image: Image, index: int, color: Color) -> void:
+static func _paint_tile(image: Image, index: int, row: int, color: Color) -> void:
 	var ox := index * TILE_SIZE
+	var oy := row * TILE_SIZE
 	var border := color.darkened(0.35)
 	var hatch := color.lightened(0.12)
+	var shift := row * 3
 	for y in TILE_SIZE:
 		for x in TILE_SIZE:
 			var pixel := color
@@ -69,6 +91,6 @@ static func _paint_tile(image: Image, index: int, color: Color) -> void:
 				pixel = border
 			elif index == 0 and y < 4:
 				pixel = Color("7ed957")
-			elif ((x + y) % 6) == 0:
+			elif ((x + y + shift) % 6) == 0:
 				pixel = hatch
-			image.set_pixel(ox + x, y, pixel)
+			image.set_pixel(ox + x, oy + y, pixel)

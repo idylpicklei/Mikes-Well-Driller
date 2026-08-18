@@ -82,18 +82,22 @@ func _surface_y(x: int) -> int:
 
 
 func _atlas_at(x: int, y: int, surface: int) -> Vector2i:
+	var column: int
 	if y == bedrock_y:
-		return PlaceholderTileset.BEDROCK
-	if y == surface:
-		return PlaceholderTileset.GRASS
-
-	var depth := y - surface
-	var speck := _fill_noise.get_noise_2d(x, y)
-	if depth <= dirt_depth:
-		return PlaceholderTileset.DIRT_DARK if speck > 0.2 else PlaceholderTileset.DIRT
-	if speck > 0.25:
-		return PlaceholderTileset.STONE_DARK
-	return PlaceholderTileset.STONE
+		column = PlaceholderTileset.BEDROCK.x
+	elif y == surface:
+		column = PlaceholderTileset.GRASS.x
+	else:
+		var depth := y - surface
+		var speck := _fill_noise.get_noise_2d(x, y)
+		if depth <= dirt_depth:
+			column = PlaceholderTileset.DIRT_DARK.x if speck > 0.2 else PlaceholderTileset.DIRT.x
+		elif speck > 0.25:
+			column = PlaceholderTileset.STONE_DARK.x
+		else:
+			column = PlaceholderTileset.STONE.x
+	# Blend atlas rows 0–2 by world seed so plateaus are not a stamped grid.
+	return PlaceholderTileset.variant_coords(column, x, y, _height_noise.seed)
 
 
 func _is_cave(x: int, y: int, surface: int) -> bool:
@@ -277,5 +281,5 @@ func _has_cell(cell: Vector2i) -> bool:
 
 
 func _is_grass_cell(cell: Vector2i) -> bool:
-	return _has_cell(cell) and get_cell_atlas_coords(cell) == PlaceholderTileset.GRASS
+	return _has_cell(cell) and PlaceholderTileset.is_grass(get_cell_atlas_coords(cell))
 

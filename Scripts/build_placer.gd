@@ -299,7 +299,7 @@ func _has_tile(cell: Vector2i) -> bool:
 
 
 func _is_grass(cell: Vector2i) -> bool:
-	return _has_tile(cell) and _terrain.get_cell_atlas_coords(cell) == PlaceholderTileset.GRASS
+	return _has_tile(cell) and PlaceholderTileset.is_grass(_terrain.get_cell_atlas_coords(cell))
 
 
 func _update_efficiency_popup() -> void:
