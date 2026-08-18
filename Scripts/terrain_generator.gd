@@ -12,12 +12,11 @@ extends TileMapLayer
 
 const PLACEHOLDER_ATLAS := "res://Assets/sprites/terrain_tileset.png"
 
-## Keep first ships well off the start plateau so Mike can place a wall/turret.
+## Keep first ships well off the start plateau so Mike can open B and place a hub.
 const MIN_SPAWNER_TILES := 100
 const SPAWNER_SIDE_CLEAR := 2
 const ACID_POOL_TILES := 12
 const ACID_DROP_TILES := 2
-const HUB_OFFSET_TILES := 3
 
 var spawn_position := Vector2.ZERO
 
@@ -145,7 +144,6 @@ func _setup_world() -> void:
 			shape_node.shape = rect
 
 	_place_acid_pools(game)
-	_place_main_hub(game)
 	_place_enemy_spawners(game)
 	_place_stranded_hirees(game)
 
@@ -166,22 +164,6 @@ func _add_acid_pool(game: Node, left_px: float, top_cell_y: int, pool_w: float, 
 	pool.position = Vector2(left_px + pool_w * 0.5, top_px + height * 0.5)
 	if pool.has_method("setup"):
 		pool.setup(Vector2(pool_w, height))
-
-
-func _place_main_hub(game: Node) -> void:
-	var structures := game.get_node_or_null("Structures") as Node2D
-	if structures == null:
-		return
-	var spawn_x := int(width / 2.0)
-	# Sit on the start plateau a few tiles from Mike so footprints don't overlap.
-	var hub_left := clampi(spawn_x + HUB_OFFSET_TILES, 2, width - PlaceholderHub.WIDTH_TILES - 2)
-	var surface := _surface_y(hub_left)
-	var left_center := map_to_local(Vector2i(hub_left, surface))
-	var right_center := map_to_local(Vector2i(hub_left + PlaceholderHub.WIDTH_TILES - 1, surface))
-	var foot := Vector2((left_center.x + right_center.x) * 0.5, left_center.y - PlaceholderTileset.TILE_SIZE * 0.5)
-	var hub := preload("res://Scenes/main_hub.tscn").instantiate()
-	structures.add_child(hub)
-	hub.global_position = to_global(foot)
 
 
 func _place_enemy_spawners(game: Node) -> void:

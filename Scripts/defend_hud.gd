@@ -68,12 +68,7 @@ func _connect_signals() -> void:
 		menu.item_chosen.connect(_on_item_chosen)
 
 	_bind_player(get_tree().get_first_node_in_group("player"))
-	var existing_hub := get_tree().get_first_node_in_group("main_hub")
-	if existing_hub:
-		_bind_hub(existing_hub)
-		_status.text = "Defend the Main Hub!"
-	else:
-		_set_idle_status()
+	_set_idle_status()
 
 
 func _bind_player(player: Node) -> void:
@@ -121,7 +116,10 @@ func _refresh_crew() -> void:
 
 
 func _on_item_chosen(_category_id: StringName, item_id: StringName) -> void:
-	if item_id == &"well":
+	if item_id == &"main_hub":
+		var cost := int(BuildCatalog.placeable(&"main_hub").get("cost_water", 0))
+		_status.text = "Place Main Hub (%d gal): click ground, right-click cancel" % cost
+	elif item_id == &"well":
 		var def := BuildCatalog.placeable(&"well")
 		var max_count := int(def.get("max_count", 5))
 		var cost := int(def.get("cost_water", 0))
@@ -219,7 +217,9 @@ func _on_game_over_menu_pressed() -> void:
 
 
 func _set_idle_status() -> void:
-	_status.text = "Defend the Main Hub!"
+	if _hub:
+		return
+	_status.text = "Build a Main Hub from Utility (B)"
 
 
 func _refresh_water(current: int, maximum: int) -> void:
