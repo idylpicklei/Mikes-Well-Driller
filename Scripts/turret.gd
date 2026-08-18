@@ -1,6 +1,7 @@
 extends Node2D
 
 ## Auto-turret: only fires when staffed by a hire. Strength scales fire rate + damage.
+## Idle / default pose faces outward from the Main Hub (away from the tank).
 
 const BULLET_SCENE := preload("res://Scenes/bullet.tscn")
 const RANGE_PX := 140.0
@@ -10,6 +11,9 @@ const MUZZLE_HEIGHT := -24.0
 var _cooldown := 0.0
 var _staff: Node = null
 var _staff_strength := 1
+## +1 face right, -1 face left. Idle pose only; combat aim still tracks crabs.
+var _idle_facing := 1.0
+var _has_target := false
 
 
 func _ready() -> void:
@@ -19,6 +23,44 @@ func _ready() -> void:
 	if sprite:
 		sprite.texture = PlaceholderTurret.create_texture()
 		sprite.position = PlaceholderTurret.SPRITE_OFFSET
+	call_deferred("_init_idle_facing")
+
+
+func _init_idle_facing() -> void:
+	var hub := get_tree().get_first_node_in_group("main_hub") as Node2D
+	if hub:
+		set_idle_facing_from_hub(hub)
+	else:
+		_apply_idle_facing()
+
+
+## Face away from the hub. Call on place and when the hub is first built.
+func set_idle_facing_from_hub(hub: Node2D) -> void:
+	if hub == null or not is_instance_valid(hub):
+		return
+	var dx := global_position.x - hub.global_position.x
+	if is_zero_approx(dx):
+		_idle_facing = 1.0
+	else:
+		_idle_facing = signf(dx)
+	if not _has_target:
+		_apply_idle_facing()
+
+
+## No hub yet: face the side Mike placed from (away from placer origin).
+func set_idle_facing_from_placer(placer_world: Vector2) -> void:
+	var dx := global_position.x - placer_world.x
+	if is_zero_approx(dx):
+		_idle_facing = 1.0
+	else:
+		_idle_facing = signf(dx)
+	_apply_idle_facing()
+
+
+func _apply_idle_facing() -> void:
+	var sprite := get_node_or_null("Sprite2D") as Sprite2D
+	if sprite:
+		sprite.flip_h = _idle_facing < 0.0
 
 
 func is_staffed() -> bool:
@@ -42,16 +84,27 @@ func unstaff(hiree: Node = null) -> void:
 		return
 	_staff = null
 	_staff_strength = 1
+	_has_target = false
+	_apply_idle_facing()
 
 
 func _physics_process(delta: float) -> void:
 	_cooldown = maxf(_cooldown - delta, 0.0)
 	if not is_staffed():
-		return
-	if _cooldown > 0.0:
+		if _has_target:
+			_has_target = false
+			_apply_idle_facing()
 		return
 	var target := _nearest_enemy()
 	if target == null:
+		if _has_target:
+			_has_target = false
+			_apply_idle_facing()
+		return
+	_has_target = true
+	if _cooldown > 0.0:
+		# Keep facing the active target while cooling down.
+		_face_dir(target.global_position - global_position)
 		return
 	_shoot_at(target)
 
@@ -72,6 +125,12 @@ func _nearest_enemy() -> Node2D:
 	return best
 
 
+func _face_dir(dir: Vector2) -> void:
+	var sprite := get_node_or_null("Sprite2D") as Sprite2D
+	if sprite and absf(dir.x) > 0.01:
+		sprite.flip_h = dir.x < 0.0
+
+
 func _shoot_at(target: Node2D) -> void:
 	var rate := float(_staff_strength)
 	_cooldown = FIRE_COOLDOWN / maxf(rate, 1.0)
@@ -81,9 +140,7 @@ func _shoot_at(target: Node2D) -> void:
 	if dir == Vector2.ZERO:
 		dir = Vector2.RIGHT
 
-	var sprite := get_node_or_null("Sprite2D") as Sprite2D
-	if sprite:
-		sprite.flip_h = dir.x < 0.0
+	_face_dir(dir)
 
 	var bullet := BULLET_SCENE.instantiate()
 	get_tree().current_scene.add_child(bullet)

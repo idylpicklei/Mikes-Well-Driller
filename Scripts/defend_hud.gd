@@ -3,12 +3,17 @@ extends Control
 const START_MENU_SCENE := "res://Scenes/start_menu.tscn"
 const FONT_BODY_PATH := "res://Assets/fonts/kenpixel_mini.ttf"
 const FONT_TITLE_PATH := "res://Assets/fonts/kenpixel_mini_square.ttf"
+## Kenney FontFile integer size class: jump off 16 → 32 for body/titles.
+const FONT_SIZE_BODY := 32
+const FONT_SIZE_TITLE := 32
 
 const COL_TEXT := Color(0.86, 0.78, 0.68, 1.0)
 const COL_MUTED := Color(0.62, 0.55, 0.48, 1.0)
 const COL_TEAL := Color(0.55, 0.78, 0.76, 1.0)
 const COL_RUST := Color(0.86, 0.55, 0.38, 1.0)
 const COL_POISON := Color(0.55, 0.78, 0.42, 1.0)
+const COL_BAR := Color(0.12, 0.09, 0.08, 0.94)
+const COL_BAR_EDGE := Color(0.55, 0.32, 0.22, 0.95)
 
 @onready var _status: Label = %StatusLabel
 @onready var _mike_health: Label = %MikeHealthLabel
@@ -22,6 +27,7 @@ const COL_POISON := Color(0.55, 0.78, 0.42, 1.0)
 @onready var _gpm_label: Label = %GpmLabel
 @onready var _game_over: ColorRect = %GameOver
 @onready var _menu_button: Button = %MenuButton
+@onready var _hud_bar: Control = $HudBar
 
 var _hub: Node = null
 var _font_body: Font
@@ -68,9 +74,10 @@ func _apply_hud_look() -> void:
 			continue
 		var is_title := label.name.ends_with("Title")
 		var font := _font_title if is_title else _font_body
+		var size := FONT_SIZE_TITLE if is_title else FONT_SIZE_BODY
 		if font:
 			label.add_theme_font_override("font", font)
-			label.add_theme_font_size_override("font_size", 8)
+			label.add_theme_font_size_override("font_size", size)
 		label.add_theme_color_override("font_color", COL_TEXT)
 	_status.add_theme_color_override("font_color", COL_MUTED)
 	_gpm_label.add_theme_color_override("font_color", COL_TEAL)
@@ -83,17 +90,25 @@ func _apply_game_over_fonts() -> void:
 		var title := _game_over.find_child("Title", true, false) as Label
 		if title:
 			title.add_theme_font_override("font", _font_title)
-			title.add_theme_font_size_override("font_size", 16)
+			title.add_theme_font_size_override("font_size", FONT_SIZE_TITLE)
 			title.add_theme_color_override("font_color", COL_TEXT)
 	if _font_body:
 		var subtitle := _game_over.find_child("Subtitle", true, false) as Label
 		if subtitle:
 			subtitle.add_theme_font_override("font", _font_body)
-			subtitle.add_theme_font_size_override("font_size", 8)
+			subtitle.add_theme_font_size_override("font_size", FONT_SIZE_BODY)
 			subtitle.add_theme_color_override("font_color", COL_TEXT)
 	if _font_title:
 		_menu_button.add_theme_font_override("font", _font_title)
-		_menu_button.add_theme_font_size_override("font_size", 8)
+		_menu_button.add_theme_font_size_override("font_size", FONT_SIZE_TITLE)
+
+
+func _process(_delta: float) -> void:
+	_refresh_gpm()
+	_refresh_crew()
+	# Keep B-catalog wheel clear while open.
+	if _hud_bar:
+		_hud_bar.visible = not BuildMenu.is_open and not _game_over.visible
 
 
 func _connect_signals() -> void:
@@ -121,11 +136,6 @@ func _bind_player(player: Node) -> void:
 		player.health_changed.connect(_on_mike_health_changed)
 	if player.has_signal("died") and not player.died.is_connected(_on_mike_died):
 		player.died.connect(_on_mike_died)
-
-
-func _process(_delta: float) -> void:
-	_refresh_gpm()
-	_refresh_crew()
 
 
 func _refresh_gpm() -> void:
@@ -183,6 +193,13 @@ func _on_item_chosen(_category_id: StringName, item_id: StringName) -> void:
 func _on_hub_placed(hub: Node2D) -> void:
 	_bind_hub(hub)
 	_status.text = "Defend the Main Hub!"
+	_orient_turrets_away_from_hub(hub)
+
+
+func _orient_turrets_away_from_hub(hub: Node2D) -> void:
+	for node in get_tree().get_nodes_in_group("turret"):
+		if node.has_method("set_idle_facing_from_hub"):
+			node.set_idle_facing_from_hub(hub)
 
 
 func _bind_hub(hub: Node) -> void:
@@ -236,7 +253,6 @@ func _on_hub_health_changed(current: int, maximum: int) -> void:
 
 
 func _on_tank_poisoned() -> void:
-	# Hub stays standing — no instant Game Over. Mike thirst-ticks down to Fat Mike GO.
 	if _hub and "health" in _hub and "MAX_HEALTH" in _hub:
 		_on_hub_health_changed(int(_hub.health), int(_hub.MAX_HEALTH))
 	else:
