@@ -91,6 +91,9 @@ func _on_item_chosen(_category_id: StringName, item_id: StringName) -> void:
 	elif item_id == &"wall":
 		var cost := int(BuildCatalog.placeable(&"wall").get("cost_water", 0))
 		_status.text = "Place Wall (%d gal): click ground, right-click cancel" % cost
+	elif item_id == &"turret":
+		var cost := int(BuildCatalog.placeable(&"turret").get("cost_gold", 0))
+		_status.text = "Place Turret (%d gold): click ground, right-click cancel" % cost
 
 
 func _on_hub_placed(hub: Node2D) -> void:
