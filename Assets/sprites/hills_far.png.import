@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://duskhills_far00001"
-path="res://.godot/imported/hills_far.png-placeholder.ctex"
+uid="uid://c0mh6lqydnfxl"
+path="res://.godot/imported/hills_far.png-b7197ad75e3ea59bbb96361ce37cb175.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://Assets/sprites/hills_far.png"
-dest_files=["res://.godot/imported/hills_far.png-placeholder.ctex"]
+dest_files=["res://.godot/imported/hills_far.png-b7197ad75e3ea59bbb96361ce37cb175.ctex"]
 
 [params]
 

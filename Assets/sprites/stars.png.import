@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://duskstars00001"
-path="res://.godot/imported/stars.png-placeholder.ctex"
+uid="uid://cywtjja0iqvjc"
+path="res://.godot/imported/stars.png-f48fc01a7bde8b16c4578c2c84b05434.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://Assets/sprites/stars.png"
-dest_files=["res://.godot/imported/stars.png-placeholder.ctex"]
+dest_files=["res://.godot/imported/stars.png-f48fc01a7bde8b16c4578c2c84b05434.ctex"]
 
 [params]
 

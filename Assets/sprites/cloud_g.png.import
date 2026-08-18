@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c1tsl35avccwk"
-path="res://.godot/imported/sky_gradient.png-1feac7ce07ccd76a1318ea7ffebb10dc.ctex"
+uid="uid://cr5qydjwqtqpf"
+path="res://.godot/imported/cloud_g.png-e5748a080a521b1cc6308b8a615a92b7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/sprites/sky_gradient.png"
-dest_files=["res://.godot/imported/sky_gradient.png-1feac7ce07ccd76a1318ea7ffebb10dc.ctex"]
+source_file="res://Assets/sprites/cloud_g.png"
+dest_files=["res://.godot/imported/cloud_g.png-e5748a080a521b1cc6308b8a615a92b7.ctex"]
 
 [params]
 
