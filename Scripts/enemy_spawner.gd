@@ -1,28 +1,59 @@
-extends Node2D
+extends StaticBody2D
+
+## Alien ship: spawns blobs at a steady sandbox rate until destroyed.
 
 const ENEMY_SCENE := preload("res://Scenes/enemy.tscn")
+const SPAWN_INTERVAL := 5.0
+const MAX_ALIVE := 6
+const MAX_HEALTH := 12
 
-var _timer := 0.0
+var health := MAX_HEALTH
+var _timer := SPAWN_INTERVAL
 var _alive: Array[Node] = []
+var _gate: Node = null
+var _dead := false
 
 
 func _ready() -> void:
 	add_to_group("enemy_spawner")
+	add_to_group("alien_ship")
 	z_index = 1
+	collision_layer = 1
+	collision_mask = 1
 	var sprite := get_node_or_null("Sprite2D") as Sprite2D
 	if sprite:
 		sprite.texture = PlaceholderSpawner.create_texture()
 		sprite.position = PlaceholderSpawner.SPRITE_OFFSET
-	# Match prior feel: first spawn after ~one base interval, not immediately.
-	_timer = WaveDirector.spawn_interval()
+
+
+func bind_gate(gate: Node) -> void:
+	_gate = gate
+
+
+func take_damage(amount: int) -> void:
+	if _dead or amount <= 0:
+		return
+	health = maxi(health - amount, 0)
+	_flash_damage()
+	if health <= 0:
+		_die()
+
+
+func _die() -> void:
+	_dead = true
+	set_process(false)
+	if is_instance_valid(_gate):
+		_gate.queue_free()
+	_gate = null
+	queue_free()
 
 
 func _process(delta: float) -> void:
+	if _dead:
+		return
 	_prune_dead()
-	var interval := WaveDirector.spawn_interval()
-	var cap := WaveDirector.max_alive()
 	_timer += delta
-	if _timer >= interval and _alive.size() < cap:
+	if _timer >= SPAWN_INTERVAL and _alive.size() < MAX_ALIVE:
 		_timer = 0.0
 		_spawn()
 
@@ -33,7 +64,7 @@ func _spawn() -> void:
 		return
 	var enemy := ENEMY_SCENE.instantiate()
 	if enemy.has_method("configure"):
-		enemy.configure(WaveDirector.enemy_health())
+		enemy.configure(1)
 	host.add_child(enemy)
 	var side := -1.0 if randf() < 0.5 else 1.0
 	var offset_x := (PlaceholderSpawner.SIZE.x * 0.5) + (PlaceholderTileset.TILE_SIZE * 1.5)
@@ -47,3 +78,12 @@ func _prune_dead() -> void:
 		if is_instance_valid(node):
 			living.append(node)
 	_alive = living
+
+
+func _flash_damage() -> void:
+	var sprite := get_node_or_null("Sprite2D") as Sprite2D
+	if sprite == null:
+		return
+	var tween := create_tween()
+	tween.tween_property(sprite, "modulate", Color(1.4, 0.55, 0.55), 0.06)
+	tween.tween_property(sprite, "modulate", Color.WHITE, 0.12)

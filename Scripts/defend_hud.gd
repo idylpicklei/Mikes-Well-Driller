@@ -4,7 +4,7 @@ const START_MENU_SCENE := "res://Scenes/start_menu.tscn"
 const FONT_PATH := "res://Assets/fonts/PixelOperator8-Bold.ttf"
 
 @onready var _status: Label = %StatusLabel
-@onready var _wave: Label = %WaveLabel
+@onready var _mike_health: Label = %MikeHealthLabel
 @onready var _health: Label = %HealthLabel
 @onready var _water_bar: ProgressBar = %WaterBar
 @onready var _water_label: Label = %WaterLabel
@@ -23,12 +23,9 @@ func _ready() -> void:
 	_apply_game_over_fonts()
 	_game_over.visible = false
 	_set_idle_status()
-	_on_wave_changed(WaveDirector.wave)
 	_refresh_water(GameResources.water, GameResources.water_max)
 	if not GameResources.water_changed.is_connected(_refresh_water):
 		GameResources.water_changed.connect(_refresh_water)
-	if not WaveDirector.wave_changed.is_connected(_on_wave_changed):
-		WaveDirector.wave_changed.connect(_on_wave_changed)
 	_refresh_gpm()
 	set_process(true)
 	call_deferred("_connect_signals")
@@ -53,6 +50,19 @@ func _connect_signals() -> void:
 	var menu := get_tree().get_first_node_in_group("build_menu") as BuildMenu
 	if menu and not menu.item_chosen.is_connected(_on_item_chosen):
 		menu.item_chosen.connect(_on_item_chosen)
+
+	_bind_player(get_tree().get_first_node_in_group("player"))
+
+
+func _bind_player(player: Node) -> void:
+	if player == null:
+		return
+	if "health" in player and "MAX_HEALTH" in player:
+		_on_mike_health_changed(int(player.health), int(player.MAX_HEALTH))
+	if player.has_signal("health_changed") and not player.health_changed.is_connected(_on_mike_health_changed):
+		player.health_changed.connect(_on_mike_health_changed)
+	if player.has_signal("died") and not player.died.is_connected(_on_mike_died):
+		player.died.connect(_on_mike_died)
 
 
 func _process(_delta: float) -> void:
@@ -96,10 +106,6 @@ func _on_hub_placed(hub: Node2D) -> void:
 	_status.text = "Defend the Main Hub!"
 
 
-func _on_wave_changed(wave: int) -> void:
-	_wave.text = "Wave %d" % wave
-
-
 func _bind_hub(hub: Node) -> void:
 	if _hub and _hub.has_signal("health_changed"):
 		if _hub.health_changed.is_connected(_on_hub_health_changed):
@@ -116,6 +122,17 @@ func _bind_hub(hub: Node) -> void:
 		_hub.destroyed.connect(_on_hub_destroyed)
 
 
+func _on_mike_health_changed(current: int, maximum: int) -> void:
+	_mike_health.text = "Mike HP: %d / %d" % [current, maximum]
+
+
+func _on_mike_died() -> void:
+	_mike_health.text = "Mike down!"
+	_status.text = "Fat Mike was killed."
+	_set_game_over_subtitle("Fat Mike was killed.")
+	_show_game_over()
+
+
 func _on_hub_health_changed(current: int, maximum: int) -> void:
 	_health.text = "Hub HP: %d / %d" % [current, maximum]
 
@@ -124,7 +141,14 @@ func _on_hub_destroyed() -> void:
 	_hub = null
 	_health.text = "Hub destroyed!"
 	_status.text = "The Main Hub was lost."
+	_set_game_over_subtitle("The Main Hub was destroyed.")
 	_show_game_over()
+
+
+func _set_game_over_subtitle(text: String) -> void:
+	var subtitle := _game_over.find_child("Subtitle", true, false) as Label
+	if subtitle:
+		subtitle.text = text
 
 
 func _show_game_over() -> void:
@@ -143,7 +167,6 @@ func _on_game_over_menu_pressed() -> void:
 	BuildMenu.block_shoot = false
 	BuildPlacer.is_placing = false
 	PauseMenu.is_open = false
-	WaveDirector.reset()
 	get_tree().paused = false
 	get_tree().change_scene_to_file(START_MENU_SCENE)
 

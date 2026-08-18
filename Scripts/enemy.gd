@@ -11,6 +11,10 @@ const STUCK_JUMP_COOLDOWN := 0.45
 const MAX_HEALTH := 1
 const HUB_DAMAGE := 5
 const HUB_ATTACK_COOLDOWN := 1.0
+const PLAYER_CHASE_RANGE := 100.0
+const PLAYER_DAMAGE := 10
+const PLAYER_ATTACK_COOLDOWN := 0.8
+const PLAYER_TOUCH_RANGE := 14.0
 
 var max_health := MAX_HEALTH
 var health := MAX_HEALTH
@@ -19,6 +23,7 @@ var _last_x := INF
 var _no_move_for := 0.0
 var _stuck_jump_cd := 0.0
 var _hub_attack_cd := 0.0
+var _player_attack_cd := 0.0
 
 
 func configure(hp: int) -> void:
@@ -49,7 +54,7 @@ func _physics_process(delta: float) -> void:
 	velocity.x = dir * SPEED
 
 	move_and_slide()
-	if _attack_defend_target(delta):
+	if _attack_player(delta) or _attack_defend_target(delta):
 		velocity.x = 0.0
 	else:
 		_hop_if_blocked(delta, dir)
@@ -110,6 +115,28 @@ func _is_blocked(dir: float) -> bool:
 	return false
 
 
+func _attack_player(delta: float) -> bool:
+	_player_attack_cd = maxf(_player_attack_cd - delta, 0.0)
+	var player := _touching_player()
+	if player == null:
+		return false
+	if _player_attack_cd <= 0.0 and player.has_method("take_damage"):
+		player.take_damage(PLAYER_DAMAGE)
+		_player_attack_cd = PLAYER_ATTACK_COOLDOWN
+	return true
+
+
+func _touching_player() -> Node:
+	for i in get_slide_collision_count():
+		var other := get_slide_collision(i).get_collider()
+		if other is Node and (other as Node).is_in_group("player"):
+			return other as Node
+	var node := get_tree().get_first_node_in_group("player")
+	if node is Node2D and global_position.distance_to((node as Node2D).global_position) <= PLAYER_TOUCH_RANGE:
+		return node
+	return null
+
+
 func _attack_defend_target(delta: float) -> bool:
 	_hub_attack_cd = maxf(_hub_attack_cd - delta, 0.0)
 	var hub: Node = null
@@ -127,10 +154,14 @@ func _attack_defend_target(delta: float) -> bool:
 
 
 func _target() -> Node2D:
+	var player := get_tree().get_first_node_in_group("player")
+	if player is Node2D:
+		var p := player as Node2D
+		if global_position.distance_to(p.global_position) <= PLAYER_CHASE_RANGE:
+			return p
 	var hub := get_tree().get_first_node_in_group("main_hub")
 	if hub is Node2D:
 		return hub as Node2D
-	var player := get_tree().get_first_node_in_group("player")
 	if player is Node2D:
 		return player as Node2D
 	return null
