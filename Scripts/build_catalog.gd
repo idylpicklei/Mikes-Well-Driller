@@ -30,14 +30,6 @@ static func default_categories() -> Array[Dictionary]:
 				{"id": &"turret", "label": "Turret"},
 			],
 		},
-		{
-			"id": &"utility",
-			"label": "Utility",
-			"color": Color("247068"),
-			"items": [
-				{"id": &"main_hub", "label": "Main Hub"},
-			],
-		},
 	]
 
 

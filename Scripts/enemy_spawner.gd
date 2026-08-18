@@ -3,14 +3,18 @@ extends StaticBody2D
 ## Alien ship: spawns blobs at a steady sandbox rate until destroyed.
 
 const ENEMY_SCENE := preload("res://Scenes/enemy.tscn")
-const SPAWN_INTERVAL := 5.0
-const MAX_ALIVE := 6
+## Steady sandbox cadence after the opening grace window.
+const SPAWN_INTERVAL := 8.0
+## Delay before the first alien leaves each ship (opening is playable).
+const FIRST_SPAWN_DELAY := 22.0
+const MAX_ALIVE := 4
 const MAX_HEALTH := 12
 
 var health := MAX_HEALTH
-var _timer := SPAWN_INTERVAL
+var _timer := 0.0
 var _alive: Array[Node] = []
 var _dead := false
+var _spawned_once := false
 
 
 func _ready() -> void:
@@ -56,8 +60,10 @@ func _process(delta: float) -> void:
 		return
 	_prune_dead()
 	_timer += delta
-	if _timer >= SPAWN_INTERVAL and _alive.size() < MAX_ALIVE:
+	var need := FIRST_SPAWN_DELAY if not _spawned_once else SPAWN_INTERVAL
+	if _timer >= need and _alive.size() < MAX_ALIVE:
 		_timer = 0.0
+		_spawned_once = true
 		_spawn()
 
 

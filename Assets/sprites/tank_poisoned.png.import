@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://crnlfy815b3i7"
-path="res://.godot/imported/turret.png-fc8b6cf6b3afa53a4b41be8fbfc7738d.ctex"
+uid="uid://hero06tppr0b"
+path="res://.godot/imported/tank_poisoned.png-913052e4f057f9b7ad1c8469ae359f71.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/sprites/turret.png"
-dest_files=["res://.godot/imported/turret.png-fc8b6cf6b3afa53a4b41be8fbfc7738d.ctex"]
+source_file="res://Assets/sprites/tank_poisoned.png"
+dest_files=["res://.godot/imported/tank_poisoned.png-913052e4f057f9b7ad1c8469ae359f71.ctex"]
 
 [params]
 
