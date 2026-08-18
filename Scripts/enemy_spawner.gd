@@ -10,7 +10,6 @@ const MAX_HEALTH := 12
 var health := MAX_HEALTH
 var _timer := SPAWN_INTERVAL
 var _alive: Array[Node] = []
-var _gate: Node = null
 var _dead := false
 
 
@@ -26,10 +25,6 @@ func _ready() -> void:
 		sprite.position = PlaceholderSpawner.SPRITE_OFFSET
 
 
-func bind_gate(gate: Node) -> void:
-	_gate = gate
-
-
 func take_damage(amount: int) -> void:
 	if _dead or amount <= 0:
 		return
@@ -42,9 +37,6 @@ func take_damage(amount: int) -> void:
 func _die() -> void:
 	_dead = true
 	set_process(false)
-	if is_instance_valid(_gate):
-		_gate.queue_free()
-	_gate = null
 	queue_free()
 
 
