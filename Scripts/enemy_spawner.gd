@@ -5,8 +5,8 @@ extends StaticBody2D
 const ENEMY_SCENE := preload("res://Scenes/enemy.tscn")
 ## Steady sandbox cadence after the opening grace window.
 const SPAWN_INTERVAL := 8.0
-## Delay before the first alien leaves each ship (opening is playable).
-const FIRST_SPAWN_DELAY := 22.0
+## Dylan: five minutes to explore / place a hub before ships appear and dump the first pack.
+const FIRST_SPAWN_DELAY := 300.0
 const MAX_ALIVE := 4
 const MAX_HEALTH := 12
 
@@ -15,19 +15,20 @@ var _timer := 0.0
 var _alive: Array[Node] = []
 var _dead := false
 var _spawned_once := false
+var _ship_landed := false
 
 
 func _ready() -> void:
 	add_to_group("enemy_spawner")
 	add_to_group("alien_ship")
 	z_index = 1
-	collision_layer = 1
-	collision_mask = 1
 	var sprite := get_node_or_null("Sprite2D") as Sprite2D
 	if sprite:
 		sprite.texture = PlaceholderSpawner.create_texture()
 		sprite.position = PlaceholderSpawner.SPRITE_OFFSET
 	_apply_footprint_collision()
+	# Sit dormant until the opening delay — no visible ships / aliens at t=0.
+	_set_ship_active(false)
 
 
 func _apply_footprint_collision() -> void:
@@ -40,8 +41,18 @@ func _apply_footprint_collision() -> void:
 	shape_node.position = PlaceholderSpawner.SPRITE_OFFSET
 
 
+func _set_ship_active(active: bool) -> void:
+	_ship_landed = active
+	visible = active
+	collision_layer = 1 if active else 0
+	collision_mask = 1 if active else 0
+	var shape_node := get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if shape_node:
+		shape_node.disabled = not active
+
+
 func take_damage(amount: int) -> void:
-	if _dead or amount <= 0:
+	if _dead or not _ship_landed or amount <= 0:
 		return
 	health = maxi(health - amount, 0)
 	_flash_damage()
@@ -60,8 +71,14 @@ func _process(delta: float) -> void:
 		return
 	_prune_dead()
 	_timer += delta
-	var need := FIRST_SPAWN_DELAY if not _spawned_once else SPAWN_INTERVAL
-	if _timer >= need and _alive.size() < MAX_ALIVE:
+	if not _ship_landed:
+		if _timer >= FIRST_SPAWN_DELAY:
+			_timer = 0.0
+			_set_ship_active(true)
+			_spawned_once = true
+			_spawn()
+		return
+	if _timer >= SPAWN_INTERVAL and _alive.size() < MAX_ALIVE:
 		_timer = 0.0
 		_spawned_once = true
 		_spawn()
