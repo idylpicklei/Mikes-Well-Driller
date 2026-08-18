@@ -2,6 +2,7 @@ class_name PlaceholderAcidOcean
 extends RefCounted
 
 ## Acid ocean strip: three 16×16 tiles for map-edge water, separate from PlaceholderTileset.
+## Artist drop-in: binary-replace acid_ocean.png (keep 3×16 atlas); load path stays the same.
 ## Source art is dark; brighten at load so it reads as poison water against the sky clear color.
 const TILE := PlaceholderTileset.TILE_SIZE
 const TILE_COUNT := 3
