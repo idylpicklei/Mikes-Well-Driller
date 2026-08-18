@@ -1,12 +1,13 @@
 extends Node2D
 
-## Far + mid rolling hills.
+## Far + mid rolling hills — seamless horizontal tiles, not random stamps.
 ## Draw stack: sky → stars → hills_far → clouds → hills_mid → terrain/Mike.
-## This node owns both hill bands (far behind clouds, mid in front).
-## Slow horizontal parallax, hop a little less not zero (same dampen as clouds).
+## Slow horizontal parallax; hop dampened (a little, not locked).
 ##
-## Artist sheets: hills_far.png (320×48), hills_mid.png (320×40).
-## Mid falls back to a simple silhouette only if hills_mid.png is missing.
+## Drop-ins: Assets/sprites/hills_far.png, hills_mid.png
+## Current: 320×48 / 320×40. Coming recut: 320×96 / 320×72 (tileable X,
+## opaque ridge→bottom). Tile step = texture width; height is read from the
+## sheet so taller art works with no code change.
 
 const HILLS_FAR_PATH := "res://Assets/sprites/hills_far.png"
 const HILLS_MID_PATH := "res://Assets/sprites/hills_mid.png"
@@ -16,15 +17,21 @@ const MOUNTAINS_PATH := "res://Assets/sprites/mountains.png"
 const COL_FAR := Color(0.10, 0.14, 0.22, 0.95)
 const COL_NEAR := Color(0.14, 0.12, 0.18, 0.98)
 const COL_RIM := Color(0.55, 0.28, 0.22, 0.55)
+## Fallback fill if the sheet can't be sampled (matches dusk silhouette mood).
+const FILL_FAR := Color(0.10, 0.12, 0.18, 1.0)
+const FILL_MID := Color(0.12, 0.11, 0.16, 1.0)
 
-const SPAN := 3200.0
+const VIEW_W := 1280.0
+const VIEW_H := 720.0
+## Extra fill below the strip so sky never peeks under the range.
+const FILL_DOWN := 900.0
 const FAR_Z := -100
 const MID_Z := -70
 
 var _far_tex: Texture2D
 var _mid_tex: Texture2D
-var _far_sprites: Array[Sprite2D] = []
-var _mid_sprites: Array[Sprite2D] = []
+var _far_band: Dictionary = {}
+var _mid_band: Dictionary = {}
 var _mid_draw: Node2D
 var _y_baseline := 0.0
 var _baseline_ready := false
@@ -40,9 +47,9 @@ func _ready() -> void:
 	_far_tex = _load_far()
 	_mid_tex = _load_mid()
 	if _far_tex:
-		_build_sprite_band(_far_tex, _far_sprites, FAR_Z, Color(0.90, 0.82, 0.78, 0.95), 1.0)
+		_far_band = _build_tile_band(_far_tex, FAR_Z, FILL_FAR)
 	if _mid_tex:
-		_build_sprite_band(_mid_tex, _mid_sprites, MID_Z, Color(0.85, 0.75, 0.70, 0.96), 1.05)
+		_mid_band = _build_tile_band(_mid_tex, MID_Z, FILL_MID)
 	else:
 		_mid_draw = Node2D.new()
 		_mid_draw.name = "HillsMidProcedural"
@@ -72,26 +79,53 @@ func _load_mid() -> Texture2D:
 	return null
 
 
-func _build_sprite_band(
-	tex: Texture2D,
-	into: Array[Sprite2D],
-	band_z: int,
-	modulate: Color,
-	scale_base: float
-) -> void:
-	for i in 6:
+## Edge-to-edge copies at scale 1. Count covers the viewport + wrap margin.
+## Fill polygon sits under the strip so everything below the ridge stays opaque.
+func _build_tile_band(tex: Texture2D, band_z: int, fallback_fill: Color) -> Dictionary:
+	var tile_w := maxf(float(tex.get_width()), 1.0)
+	var tile_h := maxf(float(tex.get_height()), 1.0)
+	var count := int(ceil(VIEW_W / tile_w)) + 3
+	var sprites: Array[Sprite2D] = []
+	var fill := Polygon2D.new()
+	fill.z_as_relative = false
+	fill.z_index = band_z
+	fill.color = _sample_bottom_fill(tex, fallback_fill)
+	add_child(fill)
+
+	for _i in count:
 		var sprite := Sprite2D.new()
 		sprite.texture = tex
-		sprite.centered = true
+		sprite.centered = false
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		sprite.z_as_relative = false
 		sprite.z_index = band_z
-		sprite.modulate = modulate
-		sprite.flip_h = i % 2 == 1
-		var scale_mul := scale_base * randf_range(0.95, 1.15)
-		sprite.scale = Vector2(scale_mul, scale_mul)
+		sprite.flip_h = false
+		sprite.scale = Vector2.ONE
 		add_child(sprite)
-		into.append(sprite)
+		sprites.append(sprite)
+
+	return {
+		"tex": tex,
+		"sprites": sprites,
+		"fill": fill,
+		"tile_w": tile_w,
+		"tile_h": tile_h,
+	}
+
+
+func _sample_bottom_fill(tex: Texture2D, fallback: Color) -> Color:
+	var img := tex.get_image()
+	if img == null:
+		return fallback
+	var y := img.get_height() - 1
+	if y < 0:
+		return fallback
+	var x := mini(img.get_width() - 1, img.get_width() / 2)
+	var c := img.get_pixel(maxi(x, 0), y)
+	if c.a < 0.05:
+		return fallback
+	c.a = 1.0
+	return c
 
 
 func _capture_y_baseline() -> void:
@@ -105,10 +139,10 @@ func _process(delta: float) -> void:
 		_capture_y_baseline()
 	_phase_far += delta * 1.6
 	_phase_mid += delta * 2.4
-	if _far_tex:
-		_update_sprites(_far_sprites, 0.045, -22.0, 0.012, _phase_far)
-	if _mid_tex:
-		_update_sprites(_mid_sprites, 0.085, 10.0, 0.020, _phase_mid)
+	if not _far_band.is_empty():
+		_update_tile_band(_far_band, 0.045, -22.0, 0.012, _phase_far)
+	if not _mid_band.is_empty():
+		_update_tile_band(_mid_band, 0.085, 10.0, 0.020, _phase_mid)
 	if _far_tex == null:
 		queue_redraw()
 	if _mid_draw:
@@ -125,36 +159,52 @@ func _camera_center() -> Vector2:
 	return Vector2.ZERO
 
 
-func _band_y(center: Vector2, y_bias: float, hop_scale: float) -> float:
+func _band_top_y(center: Vector2, y_bias: float, hop_scale: float, tile_h: float) -> float:
+	# Place the strip so its vertical center sits near the old band baseline,
+	# then treat that as the top of the opaque mountain body + fill below.
 	var baseline := _y_baseline if _baseline_ready else center.y
 	var hop := (center.y - baseline) * hop_scale
-	return baseline + 28.0 + y_bias + hop
+	var center_y := baseline + 28.0 + y_bias + hop
+	return center_y - tile_h * 0.5
 
 
-func _update_sprites(
-	sprites: Array[Sprite2D],
+func _update_tile_band(
+	band: Dictionary,
 	parallax: float,
 	y_bias: float,
 	hop_scale: float,
 	phase: float
 ) -> void:
 	var center := _camera_center()
-	var band_y := _band_y(center, y_bias, hop_scale)
-	var parallax_x := center.x * parallax
-	var width := SPAN
-	var spacing := width / float(maxi(sprites.size(), 1))
+	var tile_w: float = float(band["tile_w"])
+	var tile_h: float = float(band["tile_h"])
+	var sprites: Array = band["sprites"]
+	var fill: Polygon2D = band["fill"]
+	var top_y := _band_top_y(center, y_bias, hop_scale, tile_h)
+	var scroll := center.x * parallax - phase
+	var view_left := center.x - VIEW_W * 0.5
+	# Snap the first tile so copies sit edge-to-edge and wrap seamlessly.
+	var first_x := view_left - fposmod(view_left - scroll, tile_w)
 	for i in sprites.size():
 		var sprite: Sprite2D = sprites[i]
-		var raw := parallax_x + float(i) * spacing - phase
-		var local := fposmod(raw - (center.x - width * 0.5), width)
-		sprite.global_position = Vector2(center.x - width * 0.5 + local, band_y)
+		sprite.global_position = Vector2(first_x + float(i) * tile_w, top_y)
+
+	var cover_w := float(sprites.size()) * tile_w + 4.0
+	var bottom_y := top_y + tile_h
+	fill.global_position = Vector2(first_x - 2.0, bottom_y)
+	fill.polygon = PackedVector2Array([
+		Vector2(0.0, 0.0),
+		Vector2(cover_w, 0.0),
+		Vector2(cover_w, FILL_DOWN),
+		Vector2(0.0, FILL_DOWN),
+	])
 
 
 func _draw() -> void:
 	if _far_tex != null:
 		return
 	var center := _camera_center()
-	var band_y := _band_y(center, -18.0, 0.012)
+	var band_y := _band_top_y(center, -18.0, 0.012, 48.0) + 24.0
 	_draw_ridge(self, center.x, band_y, center.x * 0.04, COL_FAR, 1.0, 0)
 
 
@@ -162,8 +212,8 @@ func draw_mid_procedural_into(canvas: CanvasItem) -> void:
 	if _mid_tex != null:
 		return
 	var center := _camera_center()
-	var mid_y := _band_y(center, 8.0, 0.020)
-	_draw_ridge(canvas, center.x, mid_y, center.x * 0.07 + _phase_mid, COL_NEAR, 0.85, 17)
+	var band_y := _band_top_y(center, 8.0, 0.020, 40.0) + 20.0
+	_draw_ridge(canvas, center.x, band_y, center.x * 0.07 + _phase_mid, COL_NEAR, 0.85, 17)
 
 
 func _draw_ridge(
@@ -175,10 +225,11 @@ func _draw_ridge(
 	height_mul: float,
 	seed_off: int
 ) -> void:
-	var width := SPAN
+	var width := VIEW_W + 400.0
 	var origin_x := cam_x - width * 0.5
 	var points := PackedVector2Array()
-	points.append(Vector2(origin_x - 40.0, base_y + 160.0))
+	# Solid fill from ridge down past the playfield (same job as the sprite fill).
+	points.append(Vector2(origin_x - 40.0, base_y + FILL_DOWN))
 	var steps := 28
 	for i in steps + 1:
 		var t := float(i) / float(steps)
@@ -187,7 +238,7 @@ func _draw_ridge(
 		n += sin((x + scroll) * 0.011 + float(seed_off) * 0.7) * 22.0 * height_mul
 		n += sin((x + scroll) * 0.023 + 1.3) * 10.0
 		points.append(Vector2(x, base_y - n * height_mul))
-	points.append(Vector2(origin_x + width + 40.0, base_y + 160.0))
+	points.append(Vector2(origin_x + width + 40.0, base_y + FILL_DOWN))
 	canvas.draw_colored_polygon(points, color)
 	var rim := PackedVector2Array()
 	for i in range(1, points.size() - 1):
