@@ -3,9 +3,9 @@ extends Control
 const START_MENU_SCENE := "res://Scenes/start_menu.tscn"
 const FONT_BODY_PATH := "res://Assets/fonts/kenpixel_mini.ttf"
 const FONT_TITLE_PATH := "res://Assets/fonts/kenpixel_mini_square.ttf"
-## Kenney FontFile integer size class: jump off 16 → 32 for body/titles.
-const FONT_SIZE_BODY := 32
-const FONT_SIZE_TITLE := 32
+## Kenney FontFile integer size class (nearest, no MSDF): body + titles at 16.
+const FONT_SIZE_BODY := 16
+const FONT_SIZE_TITLE := 16
 
 const COL_TEXT := Color(0.86, 0.78, 0.68, 1.0)
 const COL_MUTED := Color(0.62, 0.55, 0.48, 1.0)
@@ -54,6 +54,7 @@ func _ready() -> void:
 	_refresh_gpm()
 	set_process(true)
 	call_deferred("_connect_signals")
+	call_deferred("_fit_hud_bar")
 
 
 func _cache_tank_styles() -> void:
@@ -108,7 +109,24 @@ func _process(_delta: float) -> void:
 	_refresh_crew()
 	# Keep B-catalog wheel clear while open.
 	if _hud_bar:
-		_hud_bar.visible = not BuildMenu.is_open and not _game_over.visible
+		var show_bar := not BuildMenu.is_open and not _game_over.visible
+		if _hud_bar.visible != show_bar:
+			_hud_bar.visible = show_bar
+			if show_bar:
+				call_deferred("_fit_hud_bar")
+
+
+## Keep the full-width bottom bar flush to the edges, but only as tall as content
+## so Mike's standing tile stays visible above the chrome (camera stays up-biased).
+func _fit_hud_bar() -> void:
+	if _hud_bar == null:
+		return
+	_hud_bar.reset_size()
+	var h := ceili(_hud_bar.get_combined_minimum_size().y)
+	if h < 1:
+		h = 1
+	_hud_bar.offset_top = -float(h)
+	_hud_bar.offset_bottom = 0.0
 
 
 func _connect_signals() -> void:
@@ -211,6 +229,7 @@ func _bind_hub(hub: Node) -> void:
 
 	_hub = hub
 	_tank_row.visible = true
+	call_deferred("_fit_hud_bar")
 	if "health" in _hub and "MAX_HEALTH" in _hub:
 		_on_hub_health_changed(int(_hub.health), int(_hub.MAX_HEALTH))
 	if _hub.has_signal("health_changed"):
@@ -236,7 +255,10 @@ func _on_mike_died() -> void:
 
 
 func _on_hub_health_changed(current: int, maximum: int) -> void:
+	var was_visible := _tank_row.visible
 	_tank_row.visible = true
+	if not was_visible:
+		call_deferred("_fit_hud_bar")
 	_tank_bar.max_value = maximum
 	_tank_bar.value = current
 	var poisoned := _hub != null and "is_tank_poisoned" in _hub and bool(_hub.is_tank_poisoned)
