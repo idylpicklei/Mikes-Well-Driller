@@ -2,6 +2,7 @@ extends Control
 
 const FONT_PATH := "res://Assets/fonts/PixelOperator8-Bold.ttf"
 const GAME_SCENE := "res://Scenes/game.tscn"
+const VERSION_PATH := "res://version.txt"
 
 enum View { MAIN, SETTINGS }
 
@@ -9,6 +10,7 @@ enum View { MAIN, SETTINGS }
 @onready var _settings_panel: VBoxContainer = %SettingsPanel
 @onready var _bind_rows: VBoxContainer = %BindRows
 @onready var _remap_hint: Label = %RemapHint
+@onready var _build_stamp: Label = %BuildStamp
 
 var _view := View.MAIN
 var _remapping_action: StringName = &""
@@ -19,8 +21,21 @@ var _font: Font
 func _ready() -> void:
 	_font = load(FONT_PATH)
 	_apply_fonts()
+	_build_stamp.text = _read_build_stamp()
 	_build_bind_rows()
 	_show_view(View.MAIN)
+
+
+func _read_build_stamp() -> String:
+	if not FileAccess.file_exists(VERSION_PATH):
+		return "dev"
+	var file := FileAccess.open(VERSION_PATH, FileAccess.READ)
+	if file == null:
+		return "dev"
+	var text := file.get_as_text().strip_edges()
+	if text.is_empty():
+		return "dev"
+	return text
 
 
 func _input(event: InputEvent) -> void:
@@ -50,6 +65,7 @@ func _apply_fonts() -> void:
 		label.add_theme_font_override("font", _font)
 		label.add_theme_color_override("font_color", text)
 	_remap_hint.add_theme_color_override("font_color", muted)
+	_build_stamp.add_theme_color_override("font_color", muted)
 	for node in find_children("*", "Button", true, false):
 		(node as Button).add_theme_font_override("font", _font)
 

@@ -90,6 +90,19 @@ fi
 
 ensure_templates
 
+write_build_stamp() {
+	# Web builds have no git — bake short SHA (+ date) for the start-menu stamp.
+	local sha date_str
+	sha="$(git -C "${ROOT}" rev-parse --short HEAD)"
+	date_str="$(date -u +%Y-%m-%d)"
+	printf '%s  %s\n' "${sha}" "${date_str}" > "${ROOT}/version.txt"
+	echo "Build stamp: ${sha}  ${date_str}"
+}
+
+write_build_stamp
+
 echo "Exporting ${PRESET} with ${GODOT_BIN}"
 "${GODOT_BIN}" --headless --path "${ROOT}" --export-release "${PRESET}" "${OUT}"
-echo "Wrote ${OUT}"
+# Also drop a plain-text copy next to the Pages artifacts for easy inspection.
+cp "${ROOT}/version.txt" "${ROOT}/docs/version.txt"
+echo "Wrote ${OUT} (stamp $(tr -d '\n' < "${ROOT}/version.txt"))"
