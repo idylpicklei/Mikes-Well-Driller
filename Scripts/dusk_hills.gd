@@ -5,8 +5,8 @@ extends Node2D
 ## This node owns both hill bands (far behind clouds, mid in front).
 ## Slow horizontal parallax, hop a little less not zero (same dampen as clouds).
 ##
-## Artist drop-ins: hills_far.png (320×48), hills_mid.png (320×40).
-## Until mid art lands, far uses the sprite; mid falls back to a simple silhouette.
+## Artist sheets: hills_far.png (320×48), hills_mid.png (320×40).
+## Mid falls back to a simple silhouette only if hills_mid.png is missing.
 
 const HILLS_FAR_PATH := "res://Assets/sprites/hills_far.png"
 const HILLS_MID_PATH := "res://Assets/sprites/hills_mid.png"
