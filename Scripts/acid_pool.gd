@@ -1,17 +1,17 @@
 extends Area2D
 
 ## Acid ocean past the beach. Overlap ticks 5 HP/s on Mike and hires; leave to stop.
-## Floor descends from scum depth into deeper water (wade ramp). Artist drop-in:
-## replace Assets/sprites/acid_ocean.png (same 3×16 layout); no code change.
+## Floor descends from shallow-blend depth into deeper water (wade ramp). Artist drop-in:
+## replace Assets/sprites/acid_ocean.png (4×2 atlas); paint maps columns deeper outward.
 
 const DPS := PlaceholderAcidOcean.DAMAGE_PER_SECOND
 ## Character bodies sit above their feet — extend the hurt box above the waterline.
 const HURT_ABOVE := 36.0
-## Match beach scum depth, then ramp deeper over the first ocean columns.
-const FLOOR_START_DEPTH_PX := 8.0
-const FLOOR_DEEP_DEPTH_PX := 20.0
+## Match beach shallow-blend depth, then ramp deeper over the first ocean columns.
+const FLOOR_START_DEPTH_PX := 12.0
+const FLOOR_DEEP_DEPTH_PX := 24.0
 const FLOOR_RAMP_TILES := 6
-## Soft inland lip so the ocean rectangle blends under the beach scum.
+## Soft inland lip so the ocean rectangle blends under the beach shallow-blend.
 const BLEND_INLAND_TILES := 1.0
 
 var _accum: Dictionary = {}  # instance_id -> float damage accumulator
@@ -136,15 +136,22 @@ func _build_ocean_visual(size_px: Vector2, inland_dir: float, tile: float) -> vo
 	var tex := PlaceholderAcidOcean.create_texture()
 	var cols := maxi(ceili(size_px.x / tile), 1)
 	var rows := maxi(ceili(size_px.y / tile), 1)
+	var atlas_cols := PlaceholderAcidOcean.COLS
+	var atlas_rows := PlaceholderAcidOcean.ROWS
 	var origin := -size_px * 0.5
 	for row in rows:
 		for col in cols:
-			# col 0 = left of visual; map to inland-most for blend fade.
+			# col 0 = left of visual; map to inland-most for depth paint + blend fade.
 			var from_inland := col if outward > 0.0 else (cols - 1 - col)
 			var sprite := Sprite2D.new()
 			sprite.texture = tex
-			sprite.hframes = PlaceholderAcidOcean.TILE_COUNT
-			sprite.frame = col % PlaceholderAcidOcean.TILE_COUNT
+			sprite.hframes = atlas_cols
+			sprite.vframes = atlas_rows
+			# Surface row 0 on the waterline; fill row 1 stacked underneath.
+			var atlas_row := 0 if row == 0 else 1
+			# Columns deepen outward: shallow → mid → deep → abyss.
+			var atlas_col := clampi(from_inland, 0, atlas_cols - 1)
+			sprite.frame = atlas_row * atlas_cols + atlas_col
 			sprite.centered = true
 			var depth_nudge := 0.0
 			if from_inland < FLOOR_RAMP_TILES:
@@ -152,7 +159,7 @@ func _build_ocean_visual(size_px: Vector2, inland_dir: float, tile: float) -> vo
 				depth_nudge = lerpf(FLOOR_START_DEPTH_PX, FLOOR_DEEP_DEPTH_PX, t) * 0.25
 			sprite.position = origin + Vector2((col + 0.5) * tile, (row + 0.5) * tile + depth_nudge)
 			sprite.z_index = 0
-			# Soften the inland-most column so acid melts into scum instead of a hard cut.
+			# Soften the inland-most column so acid melts into shallow-blend instead of a hard cut.
 			var alpha := 1.0 if from_inland > 0 else 0.72
 			sprite.modulate = Color(1.15, 1.35, 1.05, alpha)
 			add_child(sprite)

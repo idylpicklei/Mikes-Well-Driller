@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://datr1s5cwlqma"]
+[gd_scene load_steps=10 format=3 uid="uid://datr1s5cwlqma"]
 
 [ext_resource type="PackedScene" uid="uid://chn4gyaisr31t" path="res://Scenes/player.tscn" id="1_7u14b"]
 [ext_resource type="Script" path="res://Scripts/terrain_generator.gd" id="2_terrain"]
@@ -7,11 +7,15 @@
 [ext_resource type="PackedScene" uid="uid://cpausemenu00001" path="res://Scenes/pause_menu.tscn" id="5_pause"]
 [ext_resource type="Script" path="res://Scripts/build_placer.gd" id="6_placer"]
 [ext_resource type="PackedScene" uid="uid://cdefendhud00001" path="res://Scenes/defend_hud.tscn" id="7_hud"]
+[ext_resource type="Script" path="res://Scripts/dusk_clouds.gd" id="8_clouds"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_killzone"]
 size = Vector2(8000, 80)
 
 [node name="Game" type="Node2D"]
+
+[node name="DuskClouds" type="ParallaxBackground" parent="."]
+script = ExtResource("8_clouds")
 
 [node name="Terrain" type="TileMapLayer" parent="."]
 script = ExtResource("2_terrain")

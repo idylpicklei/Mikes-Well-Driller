@@ -1,12 +1,12 @@
 extends StaticBody2D
 
-## Walkable shore at the map edge: dry → wet → scum, then acid ocean beyond.
+## Walkable shore at the map edge: dry → wet → scum → shallow-blend, then acid ocean beyond.
 ## Collision steps down so the approach is a wade ramp, not a flat ledge.
-## Artist drop-in: replace Assets/sprites/beach.png (same 3×16 layout); no code change.
+## Artist drop-in: replace Assets/sprites/beach.png (same 4×16 layout); no code change.
 
-## Depth below grass surface for dry | wet | scum (pixels).
-const DEPTHS_PX := [0.0, 4.0, 8.0]
-## Soft acid wash under wet/scum so poison blends into sand (current tiles stay on top).
+## Depth below grass surface for dry | wet | scum | shallow-blend (pixels).
+const DEPTHS_PX := [0.0, 4.0, 8.0, 12.0]
+## Soft acid wash under wet/scum/shallow-blend so poison blends into sand (current tiles stay on top).
 const BLEND_COLOR := Color(0.28, 0.78, 0.18, 0.35)
 
 
@@ -16,7 +16,6 @@ func setup(outward: float, overlap_px: float = 0.0) -> void:
 	var tile := float(PlaceholderTileset.TILE_SIZE)
 	var tex := PlaceholderBeach.create_texture()
 	var count := PlaceholderBeach.TILE_COUNT
-	var width_px := float(count) * tile
 	var overlap := maxf(overlap_px, 0.0)
 
 	# Drop any prior shapes/sprites; rebuild ramp immediately (not deferred).
@@ -30,7 +29,7 @@ func setup(outward: float, overlap_px: float = 0.0) -> void:
 
 
 func _build_acid_blend(outward: float, tile: float, count: int) -> void:
-	# Wash starts under wet sand and covers scum so the ocean edge is not a hard rectangle.
+	# Wash starts under wet sand and covers scum + shallow-blend so the ocean edge is not a hard rectangle.
 	if count < 2:
 		return
 	var blend := Polygon2D.new()
@@ -38,19 +37,12 @@ func _build_acid_blend(outward: float, tile: float, count: int) -> void:
 	var start := 1.0 * tile  # from wet
 	var end := float(count) * tile
 	var top := DEPTHS_PX[1]
-	var bot := DEPTHS_PX[count - 1] + tile
-	# Quad in local space; flip X by outward so both shores share the same math.
+	var bot := DEPTHS_PX[mini(count - 1, DEPTHS_PX.size() - 1)] + tile
 	var x0 := outward * start
 	var x1 := outward * end
-	# Keep winding consistent for both directions.
-	if outward < 0.0:
-		blend.polygon = PackedVector2Array([
-			Vector2(x0, top), Vector2(x1, top), Vector2(x1, bot), Vector2(x0, bot),
-		])
-	else:
-		blend.polygon = PackedVector2Array([
-			Vector2(x0, top), Vector2(x1, top), Vector2(x1, bot), Vector2(x0, bot),
-		])
+	blend.polygon = PackedVector2Array([
+		Vector2(x0, top), Vector2(x1, top), Vector2(x1, bot), Vector2(x0, bot),
+	])
 	blend.color = BLEND_COLOR
 	blend.z_index = -1
 	add_child(blend)
@@ -81,7 +73,7 @@ func _build_sprites(outward: float, tile: float, count: int, tex: Texture2D) -> 
 		var sprite := Sprite2D.new()
 		sprite.texture = tex
 		sprite.hframes = count
-		sprite.frame = i  # dry → wet → scum going outward
+		sprite.frame = i  # dry → wet → scum → shallow-blend going outward
 		sprite.centered = true
 		var along := (i + 0.5) * tile
 		sprite.position = Vector2(outward * along, depth + tile * 0.5)

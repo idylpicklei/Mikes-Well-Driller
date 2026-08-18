@@ -232,7 +232,9 @@ func _on_hub_placed(hub: Node2D) -> void:
 
 func _orient_turrets_away_from_hub(hub: Node2D) -> void:
 	for node in get_tree().get_nodes_in_group("turret"):
-		if node.has_method("set_idle_facing_from_hub"):
+		if node.has_method("set_idle_facing_from_hub_at") and node is Node2D:
+			node.set_idle_facing_from_hub_at(hub.global_position, (node as Node2D).global_position)
+		elif node.has_method("set_idle_facing_from_hub"):
 			node.set_idle_facing_from_hub(hub)
 
 

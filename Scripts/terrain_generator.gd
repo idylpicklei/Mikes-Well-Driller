@@ -17,8 +17,8 @@ const PLACEHOLDER_ATLAS := "res://Assets/sprites/terrain_tileset.png"
 ## Keep first ships well off the start plateau so Mike can open B and place a hub.
 const MIN_SPAWNER_TILES := 100
 const SPAWNER_SIDE_CLEAR := 2
-## Beach (dry|wet|scum) then acid ocean past the map edge.
-const BEACH_TILES := 3
+## Beach (dry|wet|scum|shallow-blend) then acid ocean past the map edge.
+const BEACH_TILES := 4
 const OCEAN_TILES := 14
 const OCEAN_DEPTH_TILES := 6
 ## Extra camera pad past the ocean so the shore is not clipped at the limit.

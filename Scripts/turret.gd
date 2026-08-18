@@ -11,9 +11,10 @@ const MUZZLE_HEIGHT := -24.0
 var _cooldown := 0.0
 var _staff: Node = null
 var _staff_strength := 1
-## +1 face right, -1 face left. Idle pose only; combat aim still tracks crabs.
+## +1 face right (barrel default), -1 face left. Idle pose only; combat aim still tracks crabs.
 var _idle_facing := 1.0
 var _has_target := false
+var _idle_locked := false
 
 
 func _ready() -> void:
@@ -27,6 +28,9 @@ func _ready() -> void:
 
 
 func _init_idle_facing() -> void:
+	if _idle_locked:
+		_apply_idle_facing()
+		return
 	var hub := get_tree().get_first_node_in_group("main_hub") as Node2D
 	if hub:
 		set_idle_facing_from_hub(hub)
@@ -38,11 +42,18 @@ func _init_idle_facing() -> void:
 func set_idle_facing_from_hub(hub: Node2D) -> void:
 	if hub == null or not is_instance_valid(hub):
 		return
-	var dx := global_position.x - hub.global_position.x
+	set_idle_facing_from_hub_at(hub.global_position, global_position)
+
+
+## Explicit positions avoid stale global_position on the place frame.
+func set_idle_facing_from_hub_at(hub_world: Vector2, turret_world: Vector2) -> void:
+	var dx := turret_world.x - hub_world.x
 	if is_zero_approx(dx):
 		_idle_facing = 1.0
 	else:
+		# Sign of (turret - hub): right of hub → face right (away); left → face left.
 		_idle_facing = signf(dx)
+	_idle_locked = true
 	if not _has_target:
 		_apply_idle_facing()
 
@@ -54,12 +65,14 @@ func set_idle_facing_from_placer(placer_world: Vector2) -> void:
 		_idle_facing = 1.0
 	else:
 		_idle_facing = signf(dx)
+	_idle_locked = true
 	_apply_idle_facing()
 
 
 func _apply_idle_facing() -> void:
 	var sprite := get_node_or_null("Sprite2D") as Sprite2D
 	if sprite:
+		# Art barrel points right when flip_h is false.
 		sprite.flip_h = _idle_facing < 0.0
 
 

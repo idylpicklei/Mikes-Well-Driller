@@ -73,6 +73,11 @@ func _cancel_placement() -> void:
 	placement_cancelled.emit()
 
 
+## BuildMenu opens via handled B-key; placer never sees that input — menu calls this.
+func cancel_from_menu() -> void:
+	_cancel_placement()
+
+
 func _create_ghost() -> void:
 	_ghost = Sprite2D.new()
 	_ghost.centered = true
@@ -92,11 +97,24 @@ func _process(_delta: float) -> void:
 	if _wait_for_release and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 		_wait_for_release = false
 
+	_refresh_ghost_at_mouse()
+
+
+func _refresh_ghost_at_mouse() -> void:
 	var mouse := get_global_mouse_position()
 	global_position = _snap_position(mouse)
 	_valid = _is_valid_position(mouse)
-	_ghost.modulate = Color(0.45, 1, 0.55, 0.65) if _valid else Color(1, 0.4, 0.4, 0.65)
+	_apply_ghost_tint()
 	_update_efficiency_popup()
+
+
+func _apply_ghost_tint() -> void:
+	_ghost.modulate = Color(0.45, 1, 0.55, 0.65) if _valid else Color(1, 0.4, 0.4, 0.65)
+
+
+func _mark_invalid_ghost() -> void:
+	_valid = false
+	_apply_ghost_tint()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -110,9 +128,12 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_LEFT:
-			# Valid place only; invalid occupied tiles: red ghost, no spend, no place.
+			# Re-snap + re-validate at click time so ghost never lies green on a refused click.
+			_refresh_ghost_at_mouse()
 			if _valid:
 				_place_item()
+			else:
+				_mark_invalid_ghost()
 			get_viewport().set_input_as_handled()
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
 			_cancel_placement()
@@ -130,8 +151,7 @@ func _place_item() -> void:
 		return
 	# Re-check occupancy at snap origin so invalid clicks never spend water.
 	if not _is_valid_origin(global_position) or not _can_afford(_pending):
-		_valid = false
-		_ghost.modulate = Color(1, 0.4, 0.4, 0.65)
+		_mark_invalid_ghost()
 		return
 
 	var scene: PackedScene = _pending.get("scene")
@@ -141,8 +161,7 @@ func _place_item() -> void:
 
 	var cost := int(_pending.get("cost_water", 0))
 	if cost > 0 and not GameResources.spend_water(cost):
-		_valid = false
-		_ghost.modulate = Color(1, 0.4, 0.4, 0.65)
+		_mark_invalid_ghost()
 		return
 
 	var place_origin := global_position
@@ -159,19 +178,26 @@ func _place_item() -> void:
 			node.queue_free()
 			if cost > 0:
 				GameResources.add_water(cost)
-			_valid = false
-			_ghost.modulate = Color(1, 0.4, 0.4, 0.65)
+			_mark_invalid_ghost()
 			return
 	BuildMenu.block_shoot = true
-	global_position = Vector2.ZERO
-	_cancel_placement()
+	# Keep placing repeatables (walls/turrets/wells/drills); unique hub ends the mode.
+	if _pending_item == &"main_hub" or _is_at_cap(_pending):
+		global_position = Vector2.ZERO
+		_cancel_placement()
+	else:
+		_wait_for_release = true
+		_refresh_ghost_at_mouse()
 
 
 func _orient_new_turret(turret: Node, place_origin: Vector2) -> void:
 	if turret == null:
 		return
 	var hub := get_tree().get_first_node_in_group("main_hub") as Node2D
-	if hub and turret.has_method("set_idle_facing_from_hub"):
+	if hub and turret.has_method("set_idle_facing_from_hub_at"):
+		# Use place_origin — turret.global_position can still be stale the frame of add_child.
+		turret.set_idle_facing_from_hub_at(hub.global_position, place_origin)
+	elif hub and turret.has_method("set_idle_facing_from_hub"):
 		turret.set_idle_facing_from_hub(hub)
 	elif turret.has_method("set_idle_facing_from_placer"):
 		var player := get_tree().get_first_node_in_group("player") as Node2D
@@ -343,7 +369,9 @@ func _find_attachable_well(origin: Vector2) -> Node2D:
 
 
 func _footprint_rect(origin: Vector2, size: Vector2i) -> Rect2:
-	return Rect2(origin + Vector2(-size.x * 0.5, -float(size.y)), Vector2(size))
+	# Tiny inset so edge-adjacent walls still place, but any real overlap is caught.
+	var rect := Rect2(origin + Vector2(-size.x * 0.5, -float(size.y)), Vector2(size))
+	return rect.grow(-0.01)
 
 
 func _has_tile(cell: Vector2i) -> bool:
