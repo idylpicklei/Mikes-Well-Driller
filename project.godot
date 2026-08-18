@@ -23,6 +23,7 @@ config/icon="res://icon.svg"
 
 InputBindings="*res://Scripts/input_bindings.gd"
 GameResources="*res://Scripts/game_resources.gd"
+WaveDirector="*res://Scripts/wave_director.gd"
 
 [input]
 

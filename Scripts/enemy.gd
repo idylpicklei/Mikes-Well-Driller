@@ -12,12 +12,18 @@ const MAX_HEALTH := 1
 const HUB_DAMAGE := 5
 const HUB_ATTACK_COOLDOWN := 1.0
 
+var max_health := MAX_HEALTH
 var health := MAX_HEALTH
 var _blocked_for := 0.0
 var _last_x := INF
 var _no_move_for := 0.0
 var _stuck_jump_cd := 0.0
 var _hub_attack_cd := 0.0
+
+
+func configure(hp: int) -> void:
+	max_health = maxi(hp, 1)
+	health = max_health
 
 
 func _ready() -> void:
@@ -27,6 +33,9 @@ func _ready() -> void:
 	if sprite:
 		sprite.texture = PlaceholderEnemy.create_texture()
 		sprite.position = PlaceholderEnemy.SPRITE_OFFSET
+		if max_health > 1:
+			# Tough enemies read slightly darker so 2-HP is noticeable without new art.
+			sprite.modulate = Color(0.82, 0.72, 0.72, 1.0)
 
 
 func _physics_process(delta: float) -> void:

@@ -4,6 +4,7 @@ const START_MENU_SCENE := "res://Scenes/start_menu.tscn"
 const FONT_PATH := "res://Assets/fonts/PixelOperator8-Bold.ttf"
 
 @onready var _status: Label = %StatusLabel
+@onready var _wave: Label = %WaveLabel
 @onready var _health: Label = %HealthLabel
 @onready var _water_bar: ProgressBar = %WaterBar
 @onready var _water_label: Label = %WaterLabel
@@ -24,12 +25,15 @@ func _ready() -> void:
 	_apply_game_over_fonts()
 	_game_over.visible = false
 	_set_idle_status()
+	_on_wave_changed(WaveDirector.wave)
 	_refresh_water(GameResources.water, GameResources.water_max)
 	_refresh_gold(GameResources.gold)
 	if not GameResources.water_changed.is_connected(_refresh_water):
 		GameResources.water_changed.connect(_refresh_water)
 	if not GameResources.gold_changed.is_connected(_refresh_gold):
 		GameResources.gold_changed.connect(_refresh_gold)
+	if not WaveDirector.wave_changed.is_connected(_on_wave_changed):
+		WaveDirector.wave_changed.connect(_on_wave_changed)
 	_refresh_gpm()
 	set_process(true)
 	call_deferred("_connect_signals")
@@ -91,6 +95,10 @@ func _on_hub_placed(hub: Node2D) -> void:
 	_status.text = "Defend the Main Hub!"
 
 
+func _on_wave_changed(wave: int) -> void:
+	_wave.text = "Wave %d" % wave
+
+
 func _bind_hub(hub: Node) -> void:
 	if _hub and _hub.has_signal("health_changed"):
 		if _hub.health_changed.is_connected(_on_hub_health_changed):
@@ -134,6 +142,7 @@ func _on_game_over_menu_pressed() -> void:
 	BuildMenu.block_shoot = false
 	BuildPlacer.is_placing = false
 	PauseMenu.is_open = false
+	WaveDirector.reset()
 	get_tree().paused = false
 	get_tree().change_scene_to_file(START_MENU_SCENE)
 
