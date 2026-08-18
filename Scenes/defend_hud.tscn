@@ -86,11 +86,11 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 10
 text = "Build a Main Hub from Utility (B)"
 
-[node name="WaveLabel" type="Label" parent="DefendHud/Margin/VBox"]
+[node name="MikeHealthLabel" type="Label" parent="DefendHud/Margin/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 10
-text = "Wave 1"
+text = "Mike HP: 50 / 50"
 
 [node name="HealthLabel" type="Label" parent="DefendHud/Margin/VBox"]
 unique_name_in_owner = true

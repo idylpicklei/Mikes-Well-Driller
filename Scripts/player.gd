@@ -1,21 +1,40 @@
 extends CharacterBody2D
 
 
+signal health_changed(current: int, maximum: int)
+signal died
+
 const SPEED = 130.0
 const JUMP_VELOCITY = -300.0
 const MAX_JUMPS := 2
+const MAX_HEALTH := 50
 
 var spawn_position: Vector2
 var fall_y := 10000.0
 var jumps_remaining := MAX_JUMPS
+var health := MAX_HEALTH
 var _restore_camera_smoothing := false
 var _move_dir := 0.0
 var _jump_queued := false
+var _dead := false
 
 
 func _ready() -> void:
 	add_to_group("player")
 	spawn_position = global_position
+	health_changed.emit(health, MAX_HEALTH)
+
+
+func take_damage(amount: int) -> void:
+	if _dead or amount <= 0:
+		return
+	health = maxi(health - amount, 0)
+	health_changed.emit(health, MAX_HEALTH)
+	if health <= 0:
+		_dead = true
+		died.emit()
+		set_physics_process(false)
+		set_process_input(false)
 
 
 func _input(event: InputEvent) -> void:
