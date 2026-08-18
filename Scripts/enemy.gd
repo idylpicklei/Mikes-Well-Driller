@@ -9,12 +9,15 @@ const STUCK_MOVE := 8.0
 const STUCK_SECONDS := 2.5
 const STUCK_JUMP_COOLDOWN := 0.45
 const MAX_HEALTH := 1
+const HUB_DAMAGE := 5
+const HUB_ATTACK_COOLDOWN := 1.0
 
 var health := MAX_HEALTH
 var _blocked_for := 0.0
 var _last_x := INF
 var _no_move_for := 0.0
 var _stuck_jump_cd := 0.0
+var _hub_attack_cd := 0.0
 
 
 func _ready() -> void:
@@ -37,8 +40,11 @@ func _physics_process(delta: float) -> void:
 	velocity.x = dir * SPEED
 
 	move_and_slide()
-	_hop_if_blocked(delta, dir)
-	_hop_if_stuck(delta)
+	if _attack_defend_target(delta):
+		velocity.x = 0.0
+	else:
+		_hop_if_blocked(delta, dir)
+		_hop_if_stuck(delta)
 	if global_position.y > 4000.0:
 		queue_free()
 
@@ -93,6 +99,22 @@ func _is_blocked(dir: float) -> bool:
 		if absf(col.get_normal().x) > 0.6 and signf(dir) == -signf(col.get_normal().x):
 			return true
 	return false
+
+
+func _attack_defend_target(delta: float) -> bool:
+	_hub_attack_cd = maxf(_hub_attack_cd - delta, 0.0)
+	var hub: Node = null
+	for i in get_slide_collision_count():
+		var other := get_slide_collision(i).get_collider()
+		if other is Node and (other as Node).is_in_group("defend_target"):
+			hub = other as Node
+			break
+	if hub == null:
+		return false
+	if _hub_attack_cd <= 0.0 and hub.has_method("take_damage"):
+		hub.take_damage(HUB_DAMAGE)
+		_hub_attack_cd = HUB_ATTACK_COOLDOWN
+	return true
 
 
 func _target() -> Node2D:

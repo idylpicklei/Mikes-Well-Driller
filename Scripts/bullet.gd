@@ -54,6 +54,10 @@ func _apply_hit(node: Node) -> void:
 	if _spent or node == _ignore:
 		return
 	_spent = true
+	# Friendly structures block shots but are not damaged by the player.
+	if node.is_in_group("defend_target") or node.is_in_group("wall"):
+		queue_free()
+		return
 	if node.has_method("take_damage"):
 		node.take_damage(1)
 	queue_free()

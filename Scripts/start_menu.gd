@@ -117,6 +117,12 @@ func _cancel_remap() -> void:
 
 
 func _on_start_pressed() -> void:
+	GameResources.reset_run()
+	BuildMenu.is_open = false
+	BuildMenu.block_shoot = false
+	BuildPlacer.is_placing = false
+	PauseMenu.is_open = false
+	get_tree().paused = false
 	get_tree().change_scene_to_file(GAME_SCENE)
 
 
