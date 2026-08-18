@@ -19,17 +19,17 @@ const BANDS := [
 	{
 		"paths": [CLOUD_A, CLOUD_D],
 		"parallax_x": 0.18, "parallax_y": 0.035, "drift": 6.5,
-		"y_bias": -36.0, "modulate": Color(0.72, 0.58, 0.52, 0.82), "count": 11,
+		"y_bias": -72.0, "modulate": Color(0.72, 0.58, 0.52, 0.82), "count": 11,
 	},
 	{
 		"paths": [CLOUD_B, CLOUD_E],
 		"parallax_x": 0.10, "parallax_y": 0.020, "drift": 3.6,
-		"y_bias": -72.0, "modulate": Color(0.55, 0.42, 0.40, 0.60), "count": 10,
+		"y_bias": -108.0, "modulate": Color(0.55, 0.42, 0.40, 0.60), "count": 10,
 	},
 	{
 		"paths": [CLOUD_C, CLOUD_F, CLOUD_G],
 		"parallax_x": 0.04, "parallax_y": 0.010, "drift": 1.6,
-		"y_bias": -112.0, "modulate": Color(0.42, 0.32, 0.34, 0.46), "count": 9,
+		"y_bias": -148.0, "modulate": Color(0.42, 0.32, 0.34, 0.46), "count": 9,
 	},
 ]
 
