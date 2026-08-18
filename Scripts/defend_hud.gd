@@ -6,6 +6,8 @@ const FONT_TITLE_PATH := "res://Assets/fonts/kenpixel_mini_square.ttf"
 ## Kenney FontFile integer size class (nearest, no MSDF): body + titles at 16.
 const FONT_SIZE_BODY := 16
 const FONT_SIZE_TITLE := 16
+## Hard cap so the strip never becomes a stacked report again.
+const HUD_STRIP_MAX_H := 48
 
 const COL_TEXT := Color(0.86, 0.78, 0.68, 1.0)
 const COL_MUTED := Color(0.62, 0.55, 0.48, 1.0)
@@ -39,10 +41,12 @@ var _tank_fill_poison: StyleBoxFlat
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	texture_filter = TEXTURE_FILTER_NEAREST
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_font_body = load(FONT_BODY_PATH)
 	_font_title = load(FONT_TITLE_PATH)
 	_game_over.add_to_group("game_over")
 	_cache_tank_styles()
+	_passthrough_hud_clicks()
 	_apply_hud_look()
 	_apply_game_over_fonts()
 	_game_over.visible = false
@@ -68,6 +72,19 @@ func _cache_tank_styles() -> void:
 	_tank_fill_poison.bg_color = Color(0.42, 0.62, 0.28, 1)
 
 
+## Full-rect HUD must not steal world clicks (ghost + place). Strip chrome is display-only.
+func _passthrough_hud_clicks() -> void:
+	if _hud_bar:
+		_hud_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for node in find_children("*", "Control", true, false):
+		var control := node as Control
+		if control == null or control == _game_over or _game_over.is_ancestor_of(control):
+			continue
+		if control == _menu_button:
+			continue
+		control.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+
 func _apply_hud_look() -> void:
 	for node in find_children("*", "Label", true, false):
 		var label := node as Label
@@ -80,6 +97,7 @@ func _apply_hud_look() -> void:
 			label.add_theme_font_override("font", font)
 			label.add_theme_font_size_override("font_size", size)
 		label.add_theme_color_override("font_color", COL_TEXT)
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_status.add_theme_color_override("font_color", COL_MUTED)
 	_gpm_label.add_theme_color_override("font_color", COL_TEAL)
 	_water_label.add_theme_color_override("font_color", COL_TEAL)
@@ -116,15 +134,13 @@ func _process(_delta: float) -> void:
 				call_deferred("_fit_hud_bar")
 
 
-## Keep the full-width bottom bar flush to the edges, but only as tall as content
-## so Mike's standing tile stays visible above the chrome (camera stays up-biased).
+## Thin full-width strip: size to content, hard-capped, no empty brown padding.
 func _fit_hud_bar() -> void:
 	if _hud_bar == null:
 		return
 	_hud_bar.reset_size()
 	var h := ceili(_hud_bar.get_combined_minimum_size().y)
-	if h < 1:
-		h = 1
+	h = clampi(h, 1, HUD_STRIP_MAX_H)
 	_hud_bar.offset_top = -float(h)
 	_hud_bar.offset_bottom = 0.0
 
@@ -161,7 +177,7 @@ func _refresh_gpm() -> void:
 	for well in get_tree().get_nodes_in_group("well"):
 		if well.has_method("gallons_per_minute"):
 			total += float(well.gallons_per_minute())
-	_gpm_label.text = "%.1f gpm" % total
+	_gpm_label.text = "%.1fgpm" % total
 
 
 func _refresh_crew() -> void:
@@ -181,7 +197,7 @@ func _refresh_crew() -> void:
 	if hired <= 0:
 		_crew.text = "Hired: 0"
 	else:
-		_crew.text = "Hired: %d · upkeep %s" % [hired, ", ".join(parts)]
+		_crew.text = "Hired: %d · %s" % [hired, ", ".join(parts)]
 
 
 func _on_item_chosen(_category_id: StringName, item_id: StringName) -> void:
@@ -243,7 +259,7 @@ func _bind_hub(hub: Node) -> void:
 func _on_mike_health_changed(current: int, maximum: int) -> void:
 	_mike_bar.max_value = maximum
 	_mike_bar.value = current
-	_mike_health.text = "%d / %d" % [current, maximum]
+	_mike_health.text = "%d/%d" % [current, maximum]
 
 
 func _on_mike_died() -> void:
@@ -263,12 +279,12 @@ func _on_hub_health_changed(current: int, maximum: int) -> void:
 	_tank_bar.value = current
 	var poisoned := _hub != null and "is_tank_poisoned" in _hub and bool(_hub.is_tank_poisoned)
 	if poisoned or current <= 0:
-		_health.text = "Poisoned · %d / %d" % [current, maximum]
+		_health.text = "Psn %d/%d" % [current, maximum]
 		_health.add_theme_color_override("font_color", COL_POISON)
 		if _tank_fill_poison:
 			_tank_bar.add_theme_stylebox_override("fill", _tank_fill_poison)
 	else:
-		_health.text = "Clean · %d / %d" % [current, maximum]
+		_health.text = "Ok %d/%d" % [current, maximum]
 		_health.add_theme_color_override("font_color", COL_TEAL)
 		if _tank_fill_clean:
 			_tank_bar.add_theme_stylebox_override("fill", _tank_fill_clean)
@@ -318,4 +334,4 @@ func _set_idle_status() -> void:
 func _refresh_water(current: int, maximum: int) -> void:
 	_water_bar.max_value = maximum
 	_water_bar.value = current
-	_water_label.text = "%d / %d gal" % [current, maximum]
+	_water_label.text = "%d/%d" % [current, maximum]
