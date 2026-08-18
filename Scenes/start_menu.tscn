@@ -29,83 +29,103 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MainPanel" type="VBoxContainer" parent="Center"]
+[node name="MainChrome" type="PanelContainer" parent="Center"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="MainPanel" type="VBoxContainer" parent="Center/MainChrome"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Title" type="Label" parent="Center/MainPanel"]
+[node name="Title" type="Label" parent="Center/MainChrome/MainPanel"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.96, 0.94, 0.88, 1)
+theme_override_colors/font_outline_color = Color(0.04, 0.03, 0.05, 1)
+theme_override_constants/outline_size = 1
 text = "Mikes Well Driller"
 horizontal_alignment = 1
 
-[node name="BuildStamp" type="Label" parent="Center/MainPanel"]
+[node name="BuildStamp" type="Label" parent="Center/MainChrome/MainPanel"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 8
-theme_override_colors/font_color = Color(0.58, 0.62, 0.68, 1)
+theme_override_colors/font_color = Color(0.72, 0.7, 0.66, 1)
+theme_override_colors/font_outline_color = Color(0.04, 0.03, 0.05, 1)
+theme_override_constants/outline_size = 1
 text = "dev"
 horizontal_alignment = 1
 
-[node name="StartButton" type="Button" parent="Center/MainPanel"]
-custom_minimum_size = Vector2(220, 36)
+[node name="StartButton" type="Button" parent="Center/MainChrome/MainPanel"]
+custom_minimum_size = Vector2(240, 44)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 8
+theme_override_font_sizes/font_size = 16
 text = "Start"
 
-[node name="SettingsButton" type="Button" parent="Center/MainPanel"]
-custom_minimum_size = Vector2(220, 36)
-layout_mode = 2
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 8
-text = "Settings"
-
-[node name="SettingsPanel" type="VBoxContainer" parent="Center"]
-unique_name_in_owner = true
-visible = false
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="SettingsTitle" type="Label" parent="Center/SettingsPanel"]
+[node name="SettingsButton" type="Button" parent="Center/MainChrome/MainPanel"]
+custom_minimum_size = Vector2(240, 44)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 16
 text = "Settings"
+
+[node name="SettingsChrome" type="PanelContainer" parent="Center"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="SettingsPanel" type="VBoxContainer" parent="Center/SettingsChrome"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SettingsTitle" type="Label" parent="Center/SettingsChrome/SettingsPanel"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.96, 0.94, 0.88, 1)
+theme_override_colors/font_outline_color = Color(0.04, 0.03, 0.05, 1)
+theme_override_constants/outline_size = 1
+text = "Settings"
 horizontal_alignment = 1
 
-[node name="RemapHint" type="Label" parent="Center/SettingsPanel"]
+[node name="RemapHint" type="Label" parent="Center/SettingsChrome/SettingsPanel"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 8
+theme_override_colors/font_color = Color(0.72, 0.7, 0.66, 1)
+theme_override_colors/font_outline_color = Color(0.04, 0.03, 0.05, 1)
+theme_override_constants/outline_size = 1
 text = "Press a key or mouse button. Esc cancels."
 horizontal_alignment = 1
 
-[node name="BindRows" type="VBoxContainer" parent="Center/SettingsPanel"]
+[node name="BindRows" type="VBoxContainer" parent="Center/SettingsChrome/SettingsPanel"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="ResetButton" type="Button" parent="Center/SettingsPanel"]
-custom_minimum_size = Vector2(220, 32)
+[node name="ResetButton" type="Button" parent="Center/SettingsChrome/SettingsPanel"]
+custom_minimum_size = Vector2(240, 40)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 8
+theme_override_font_sizes/font_size = 16
 text = "Reset Defaults"
 
-[node name="BackButton" type="Button" parent="Center/SettingsPanel"]
-custom_minimum_size = Vector2(220, 32)
+[node name="BackButton" type="Button" parent="Center/SettingsChrome/SettingsPanel"]
+custom_minimum_size = Vector2(240, 40)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 8
+theme_override_font_sizes/font_size = 16
 text = "Back"
 
-[connection signal="pressed" from="Center/MainPanel/StartButton" to="." method="_on_start_pressed"]
-[connection signal="pressed" from="Center/MainPanel/SettingsButton" to="." method="_on_settings_pressed"]
-[connection signal="pressed" from="Center/SettingsPanel/ResetButton" to="." method="_on_reset_pressed"]
-[connection signal="pressed" from="Center/SettingsPanel/BackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="Center/MainChrome/MainPanel/StartButton" to="." method="_on_start_pressed"]
+[connection signal="pressed" from="Center/MainChrome/MainPanel/SettingsButton" to="." method="_on_settings_pressed"]
+[connection signal="pressed" from="Center/SettingsChrome/SettingsPanel/ResetButton" to="." method="_on_reset_pressed"]
+[connection signal="pressed" from="Center/SettingsChrome/SettingsPanel/BackButton" to="." method="_on_back_pressed"]

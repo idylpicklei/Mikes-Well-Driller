@@ -7,8 +7,27 @@ const VERSION_PATH := "res://version.txt"
 ## Binary-replace Assets/sprites/start_bg.png — no code change needed.
 const START_BG_PATH := "res://Assets/sprites/start_bg.png"
 
+## Chrome on the dusk still: near-white type over solid dark plates (not pale gray on pink).
+const COL_TITLE := Color(0.96, 0.94, 0.88, 1.0)
+const COL_TEXT := Color(0.92, 0.90, 0.86, 1.0)
+const COL_MUTED := Color(0.72, 0.70, 0.66, 1.0)
+const COL_OUTLINE := Color(0.04, 0.03, 0.05, 1.0)
+const COL_SCRIM := Color(0.05, 0.04, 0.07, 0.90)
+const COL_SCRIM_EDGE := Color(0.22, 0.18, 0.20, 0.95)
+const COL_BTN := Color(0.09, 0.08, 0.10, 1.0)
+const COL_BTN_HOVER := Color(0.16, 0.14, 0.17, 1.0)
+const COL_BTN_PRESSED := Color(0.05, 0.04, 0.06, 1.0)
+const COL_BTN_DISABLED := Color(0.12, 0.11, 0.13, 1.0)
+const COL_BTN_BORDER := Color(0.40, 0.36, 0.38, 1.0)
+const FONT_TITLE := 16
+const FONT_BUTTON := 16
+const FONT_STAMP := 8
+const FONT_ROW := 16
+
 enum View { MAIN, SETTINGS }
 
+@onready var _main_chrome: PanelContainer = %MainChrome
+@onready var _settings_chrome: PanelContainer = %SettingsChrome
 @onready var _main_panel: VBoxContainer = %MainPanel
 @onready var _settings_panel: VBoxContainer = %SettingsPanel
 @onready var _bind_rows: VBoxContainer = %BindRows
@@ -21,11 +40,18 @@ var _remapping_action: StringName = &""
 var _bind_buttons: Dictionary = {}
 var _font: Font
 var _bg_art: TextureRect
+var _button_style_normal: StyleBoxFlat
+var _button_style_hover: StyleBoxFlat
+var _button_style_pressed: StyleBoxFlat
+var _button_style_disabled: StyleBoxFlat
 
 
 func _ready() -> void:
 	_font = load(FONT_PATH)
+	_build_button_styles()
+	_apply_scrim_styles()
 	_apply_fonts()
+	_apply_button_chrome()
 	_apply_start_background()
 	_build_stamp.text = _read_build_stamp()
 	_build_bind_rows()
@@ -83,23 +109,82 @@ func _input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 
-func _apply_fonts() -> void:
-	if _font == null:
-		return
-	var text := Color(0.78, 0.8, 0.84)
-	var muted := Color(0.58, 0.62, 0.68)
-	for node in find_children("*", "Label", true, false):
-		var label := node as Label
+func _build_button_styles() -> void:
+	_button_style_normal = _make_button_style(COL_BTN)
+	_button_style_hover = _make_button_style(COL_BTN_HOVER)
+	_button_style_pressed = _make_button_style(COL_BTN_PRESSED)
+	_button_style_disabled = _make_button_style(COL_BTN_DISABLED)
+
+
+func _make_button_style(fill: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = fill
+	style.border_color = COL_BTN_BORDER
+	style.set_border_width_all(1)
+	style.content_margin_left = 14
+	style.content_margin_right = 14
+	style.content_margin_top = 10
+	style.content_margin_bottom = 10
+	style.set_corner_radius_all(0)
+	return style
+
+
+func _apply_scrim_styles() -> void:
+	var scrim := StyleBoxFlat.new()
+	scrim.bg_color = COL_SCRIM
+	scrim.border_color = COL_SCRIM_EDGE
+	scrim.set_border_width_all(1)
+	scrim.content_margin_left = 28
+	scrim.content_margin_right = 28
+	scrim.content_margin_top = 22
+	scrim.content_margin_bottom = 22
+	scrim.set_corner_radius_all(0)
+	_main_chrome.add_theme_stylebox_override("panel", scrim)
+	_settings_chrome.add_theme_stylebox_override("panel", scrim.duplicate())
+
+
+func _apply_title_label(label: Label, size: int, color: Color) -> void:
+	if _font:
 		label.add_theme_font_override("font", _font)
-		label.add_theme_color_override("font_color", text)
-	_remap_hint.add_theme_color_override("font_color", muted)
-	_build_stamp.add_theme_color_override("font_color", muted)
+	label.add_theme_font_size_override("font_size", size)
+	label.add_theme_color_override("font_color", color)
+	label.add_theme_constant_override("outline_size", 1)
+	label.add_theme_color_override("font_outline_color", COL_OUTLINE)
+
+
+func _apply_fonts() -> void:
+	_apply_title_label($Center/MainChrome/MainPanel/Title as Label, FONT_TITLE, COL_TITLE)
+	_apply_title_label($Center/SettingsChrome/SettingsPanel/SettingsTitle as Label, FONT_TITLE, COL_TITLE)
+	_apply_title_label(_build_stamp, FONT_STAMP, COL_MUTED)
+	_apply_title_label(_remap_hint, FONT_STAMP, COL_MUTED)
+
+
+func _style_button(button: Button) -> void:
+	if _font:
+		button.add_theme_font_override("font", _font)
+	button.add_theme_font_size_override("font_size", FONT_BUTTON)
+	button.add_theme_color_override("font_color", COL_TEXT)
+	button.add_theme_color_override("font_hover_color", COL_TITLE)
+	button.add_theme_color_override("font_pressed_color", COL_TITLE)
+	button.add_theme_color_override("font_disabled_color", COL_MUTED)
+	button.add_theme_color_override("font_outline_color", COL_OUTLINE)
+	button.add_theme_constant_override("outline_size", 1)
+	button.add_theme_stylebox_override("normal", _button_style_normal)
+	button.add_theme_stylebox_override("hover", _button_style_hover)
+	button.add_theme_stylebox_override("pressed", _button_style_pressed)
+	button.add_theme_stylebox_override("disabled", _button_style_disabled)
+	button.add_theme_stylebox_override("focus", _button_style_hover)
+
+
+func _apply_button_chrome() -> void:
 	for node in find_children("*", "Button", true, false):
-		(node as Button).add_theme_font_override("font", _font)
+		_style_button(node as Button)
 
 
 func _show_view(view: View) -> void:
 	_view = view
+	_main_chrome.visible = view == View.MAIN
+	_settings_chrome.visible = view == View.SETTINGS
 	_main_panel.visible = view == View.MAIN
 	_settings_panel.visible = view == View.SETTINGS
 	_remap_hint.visible = false
@@ -119,18 +204,13 @@ func _build_bind_rows() -> void:
 
 		var name_label := Label.new()
 		name_label.text = str(definition["label"])
-		name_label.custom_minimum_size = Vector2(140, 0)
-		if _font:
-			name_label.add_theme_font_override("font", _font)
-			name_label.add_theme_font_size_override("font_size", 8)
-		name_label.add_theme_color_override("font_color", Color(0.78, 0.8, 0.84))
+		name_label.custom_minimum_size = Vector2(150, 0)
+		_apply_title_label(name_label, FONT_ROW, COL_TEXT)
 		row.add_child(name_label)
 
 		var bind_button := Button.new()
-		bind_button.custom_minimum_size = Vector2(180, 28)
-		if _font:
-			bind_button.add_theme_font_override("font", _font)
-			bind_button.add_theme_font_size_override("font_size", 8)
+		bind_button.custom_minimum_size = Vector2(200, 36)
+		_style_button(bind_button)
 		bind_button.pressed.connect(_on_bind_pressed.bind(action))
 		row.add_child(bind_button)
 
