@@ -109,8 +109,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_LEFT and _valid:
-			_place_item()
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			# Valid place only; invalid occupied tiles: red ghost, no spend, no place.
+			if _valid:
+				_place_item()
 			get_viewport().set_input_as_handled()
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
 			_cancel_placement()
@@ -126,7 +128,8 @@ func _place_item() -> void:
 	if _structures == null or _pending.is_empty() or _is_at_cap(_pending):
 		_cancel_placement()
 		return
-	if not _can_afford(_pending):
+	# Re-check occupancy at snap origin so invalid clicks never spend water.
+	if not _is_valid_origin(global_position) or not _can_afford(_pending):
 		_valid = false
 		_ghost.modulate = Color(1, 0.4, 0.4, 0.65)
 		return
@@ -254,34 +257,69 @@ func _is_valid_position(world_pos: Vector2) -> bool:
 		for dy in range(1, height + 1):
 			if _has_tile(ground + Vector2i(0, -dy)):
 				return false
-	var origin := _origin_on_grass(grass)
-	if _pending_item == &"well":
-		if _overlaps_group_footprints(origin, PlaceholderWell.SIZE, "well", PlaceholderWell.SIZE):
-			return false
-		if _overlaps_group_footprints(origin, PlaceholderWell.SIZE, "drill", PlaceholderDrill.SIZE):
-			return false
-	elif _pending_item == &"basic_drill":
-		if _overlaps_group_footprints(origin, PlaceholderDrill.SIZE, "well", PlaceholderWell.SIZE):
-			return false
-		if _overlaps_group_footprints(origin, PlaceholderDrill.SIZE, "drill", PlaceholderDrill.SIZE):
-			return false
-		if _find_attachable_well(origin) == null:
-			return false
+	return _is_valid_origin(_origin_on_grass(grass))
+
+
+## Occupancy + drill adjacency at a snapped foot origin (no water spend on fail).
+func _is_valid_origin(origin: Vector2) -> bool:
+	if _pending.is_empty() or _is_at_cap(_pending):
+		return false
+	var size := _pending_footprint_size()
+	if _overlaps_any_structure(origin, size):
+		return false
+	if _pending_item == &"basic_drill" and _find_attachable_well(origin) == null:
+		return false
 	return true
 
 
-func _overlaps_group_footprints(origin: Vector2, size: Vector2i, group: String, other_size: Vector2i) -> bool:
+func _pending_footprint_size() -> Vector2i:
+	match _pending_item:
+		&"main_hub":
+			return PlaceholderHub.SIZE
+		&"well":
+			return PlaceholderWell.SIZE
+		&"basic_drill":
+			return PlaceholderDrill.SIZE
+		&"wall":
+			return PlaceholderWall.SIZE
+		&"turret":
+			return PlaceholderTurret.SIZE
+		_:
+			var w := int(_pending.get("width", 1))
+			var h := int(_pending.get("height", 1))
+			return Vector2i(w * TILE_SIZE, h * TILE_SIZE)
+
+
+func _overlaps_any_structure(origin: Vector2, size: Vector2i) -> bool:
 	var proposed := _footprint_rect(origin, size)
-	for node in get_tree().get_nodes_in_group(group):
-		if not node is Node2D:
-			continue
-		var other := _footprint_rect((node as Node2D).global_position, other_size)
+	for other in _occupied_footprints():
 		if proposed.intersects(other):
 			return true
 	return false
 
 
-## 8-way adjacency: footprints must touch on an edge or corner (no gap).
+func _occupied_footprints() -> Array[Rect2]:
+	var rects: Array[Rect2] = []
+	_append_group_footprints(rects, "main_hub", PlaceholderHub.SIZE)
+	# Hub tank overlay is its own blocked footprint (even if mostly inside the hub sprite).
+	for node in get_tree().get_nodes_in_group("main_hub"):
+		if node is Node2D:
+			rects.append(_footprint_rect((node as Node2D).global_position, PlaceholderTank.SIZE))
+	_append_group_footprints(rects, "well", PlaceholderWell.SIZE)
+	_append_group_footprints(rects, "drill", PlaceholderDrill.SIZE)
+	_append_group_footprints(rects, "wall", PlaceholderWall.SIZE)
+	_append_group_footprints(rects, "turret", PlaceholderTurret.SIZE)
+	return rects
+
+
+func _append_group_footprints(rects: Array[Rect2], group: String, size: Vector2i) -> void:
+	for node in get_tree().get_nodes_in_group(group):
+		if not node is Node2D:
+			continue
+		rects.append(_footprint_rect((node as Node2D).global_position, size))
+
+
+## 8-way adjacency: footprints must touch on an edge or corner (no gap), never overlap.
 func _find_attachable_well(origin: Vector2) -> Node2D:
 	var proposed := _footprint_rect(origin, PlaceholderDrill.SIZE)
 	var best: Node2D = null

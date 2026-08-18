@@ -6,8 +6,8 @@ const FONT_TITLE_PATH := "res://Assets/fonts/kenpixel_mini_square.ttf"
 ## Kenney FontFile integer size class (nearest, no MSDF): body + titles at 16.
 const FONT_SIZE_BODY := 16
 const FONT_SIZE_TITLE := 16
-## Hard cap so the strip never becomes a stacked report again.
-const HUD_STRIP_MAX_H := 48
+## Roomier than the ultra-thin strip, still far below the old half-screen panel.
+const HUD_STRIP_MAX_H := 72
 
 const COL_TEXT := Color(0.86, 0.78, 0.68, 1.0)
 const COL_MUTED := Color(0.62, 0.55, 0.48, 1.0)
@@ -134,7 +134,7 @@ func _process(_delta: float) -> void:
 				call_deferred("_fit_hud_bar")
 
 
-## Thin full-width strip: size to content, hard-capped, no empty brown padding.
+## Full-width strip: size to content, hard-capped, no empty brown padding.
 func _fit_hud_bar() -> void:
 	if _hud_bar == null:
 		return
