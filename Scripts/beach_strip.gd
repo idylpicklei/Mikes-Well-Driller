@@ -36,8 +36,8 @@ func _build_acid_blend(outward: float, tile: float, count: int) -> void:
 	blend.name = "AcidBlend"
 	var start := 1.0 * tile  # from wet
 	var end := float(count) * tile
-	var top := DEPTHS_PX[1]
-	var bot := DEPTHS_PX[mini(count - 1, DEPTHS_PX.size() - 1)] + tile
+	var top: float = float(DEPTHS_PX[1])
+	var bot: float = float(DEPTHS_PX[mini(count - 1, DEPTHS_PX.size() - 1)]) + tile
 	var x0 := outward * start
 	var x1 := outward * end
 	blend.polygon = PackedVector2Array([

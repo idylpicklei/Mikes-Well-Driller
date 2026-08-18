@@ -44,10 +44,15 @@ func _ready() -> void:
 		_sprite.vframes = 1
 		_sprite.frame = 0
 		_sprite.centered = true
+		_sprite.visible = true
 		if max_health > 1:
 			# Tough enemies read slightly darker so 2-HP is noticeable without new art.
 			_sprite.modulate = Color(0.82, 0.72, 0.72, 1.0)
 	_apply_footprint_collision()
+	# Kick the walk sheet immediately so a spawn never looks like a static prop.
+	_walk_phase = randf() * float(PlaceholderEnemy.FRAME_COUNT)
+	if _sprite:
+		_sprite.frame = int(_walk_phase) % PlaceholderEnemy.FRAME_COUNT
 
 
 func _apply_footprint_collision() -> void:
@@ -67,7 +72,10 @@ func _physics_process(delta: float) -> void:
 	var dir := 0.0
 	var target := _target()
 	if target:
-		dir = signf(target.global_position.x - global_position.x)
+		var dx := target.global_position.x - global_position.x
+		# Small deadzone so crabs parked on the hub don't jitter; idle sheet still plays.
+		if absf(dx) > 6.0:
+			dir = signf(dx)
 	velocity.x = dir * SPEED
 
 	move_and_slide()
@@ -87,13 +95,12 @@ func _update_walk_anim(delta: float, dir: float) -> void:
 		return
 	if dir != 0.0:
 		_sprite.flip_h = dir < 0.0
-	var moving := absf(get_real_velocity().x) > 4.0 and is_on_floor()
-	if moving:
-		_walk_phase += delta * PlaceholderEnemy.WALK_FPS
-		_sprite.frame = int(_walk_phase) % PlaceholderEnemy.FRAME_COUNT
-	else:
-		_walk_phase = 0.0
-		_sprite.frame = 0
+	# Always advance the 4-frame sheet — never leave a frozen statue by the hub.
+	# Full walk rate when moving or intending to move; slower idle bob when stopped.
+	var moving := absf(get_real_velocity().x) > 2.0 or dir != 0.0
+	var fps := PlaceholderEnemy.WALK_FPS if moving else PlaceholderEnemy.WALK_FPS * 0.4
+	_walk_phase += delta * fps
+	_sprite.frame = int(_walk_phase) % PlaceholderEnemy.FRAME_COUNT
 
 
 func take_damage(amount: int) -> void:

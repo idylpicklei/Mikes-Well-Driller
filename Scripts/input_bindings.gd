@@ -1,6 +1,8 @@
 extends Node
 
 const SAVE_PATH := "user://input.cfg"
+## Bump when default binds change so stale user:// configs cannot keep D/Right on Build.
+const BINDINGS_VERSION := 2
 
 const ACTION_DEFS: Array[Dictionary] = [
 	{"action": &"move_left", "label": "Move Left", "remappable": true},
@@ -12,10 +14,14 @@ const ACTION_DEFS: Array[Dictionary] = [
 	{"action": &"pause", "label": "Pause", "remappable": false},
 ]
 
+## Keys that must never open the build catalog (movement / jump).
+const _MOVE_KEYS: Array[Key] = [KEY_A, KEY_D, KEY_W, KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN, KEY_SPACE]
+
 
 func _ready() -> void:
 	_ensure_actions_exist()
 	load_bindings()
+	_sanitize_build_menu_binding()
 
 
 func get_action_defs() -> Array[Dictionary]:
@@ -32,11 +38,11 @@ func is_rebindable(action: StringName) -> bool:
 func get_default_events(action: StringName) -> Array[InputEvent]:
 	match action:
 		&"move_left":
-			return [_key(KEY_A)]
+			return [_key(KEY_A), _key(KEY_LEFT)]
 		&"move_right":
-			return [_key(KEY_D)]
+			return [_key(KEY_D), _key(KEY_RIGHT)]
 		&"jump":
-			return [_key(KEY_W), _key(KEY_SPACE)]
+			return [_key(KEY_W), _key(KEY_SPACE), _key(KEY_UP)]
 		&"shoot":
 			return [_mouse(MOUSE_BUTTON_LEFT)]
 		&"interact":
@@ -85,7 +91,15 @@ func can_bind(event: InputEvent) -> bool:
 func bind_action(action: StringName, event: InputEvent) -> void:
 	if not is_rebindable(action):
 		return
+	# Never let movement keys own Build — that was the D/Right → catalog bug.
+	if action == &"build_menu" and _event_is_move_key(event):
+		return
 	apply_events(action, [event.duplicate()])
+	# Drop the same key from the opposite side so Build and Move stay exclusive.
+	if action == &"build_menu":
+		_erase_event_from_actions(event, [&"move_left", &"move_right", &"jump", &"interact"])
+	elif action in [&"move_left", &"move_right", &"jump", &"interact"]:
+		_erase_event_from_actions(event, [&"build_menu"])
 	save_bindings()
 
 
@@ -98,6 +112,7 @@ func reset_defaults() -> void:
 
 func save_bindings() -> void:
 	var config := ConfigFile.new()
+	config.set_value("meta", "version", BINDINGS_VERSION)
 	for definition in ACTION_DEFS:
 		var action: StringName = definition["action"]
 		var events: Array = []
@@ -112,6 +127,12 @@ func save_bindings() -> void:
 func load_bindings() -> void:
 	var config := ConfigFile.new()
 	if config.load(SAVE_PATH) != OK:
+		reset_defaults()
+		return
+
+	var stored_version := int(config.get_value("meta", "version", 0))
+	if stored_version < BINDINGS_VERSION:
+		# Stale configs may have had D/Right on build_menu or missing arrows.
 		reset_defaults()
 		return
 
@@ -135,6 +156,69 @@ func load_bindings() -> void:
 				apply_events(action, events)
 		else:
 			apply_events(action, get_default_events(action))
+
+
+## True when this event should toggle the B-catalog (never movement keys).
+func is_build_toggle_event(event: InputEvent) -> bool:
+	if not event.is_pressed() or event.is_echo():
+		return false
+	if _event_is_move_key(event):
+		return false
+	if event.is_action("move_left") or event.is_action("move_right") or event.is_action("jump"):
+		return false
+	return event.is_action("build_menu")
+
+
+func _sanitize_build_menu_binding() -> void:
+	if not InputMap.has_action(&"build_menu"):
+		apply_events(&"build_menu", get_default_events(&"build_menu"))
+		return
+	var cleaned: Array[InputEvent] = []
+	for event in InputMap.action_get_events(&"build_menu"):
+		if _event_is_move_key(event):
+			continue
+		if event is InputEventKey:
+			cleaned.append(event)
+		elif event is InputEventMouseButton:
+			cleaned.append(event)
+	if cleaned.is_empty():
+		cleaned.assign(get_default_events(&"build_menu"))
+	apply_events(&"build_menu", cleaned)
+	# Ensure movement still has WASD + arrows even if an old save wiped them.
+	if InputMap.action_get_events(&"move_right").is_empty():
+		apply_events(&"move_right", get_default_events(&"move_right"))
+	if InputMap.action_get_events(&"move_left").is_empty():
+		apply_events(&"move_left", get_default_events(&"move_left"))
+	save_bindings()
+
+
+func _erase_event_from_actions(event: InputEvent, actions: Array[StringName]) -> void:
+	for action in actions:
+		if not InputMap.has_action(action):
+			continue
+		for existing in InputMap.action_get_events(action):
+			if _events_same_bind(existing, event):
+				InputMap.action_erase_event(action, existing)
+
+
+func _events_same_bind(a: InputEvent, b: InputEvent) -> bool:
+	if a is InputEventKey and b is InputEventKey:
+		var ka := a as InputEventKey
+		var kb := b as InputEventKey
+		var ca := ka.physical_keycode if ka.physical_keycode != KEY_NONE else ka.keycode
+		var cb := kb.physical_keycode if kb.physical_keycode != KEY_NONE else kb.keycode
+		return ca != KEY_NONE and ca == cb
+	if a is InputEventMouseButton and b is InputEventMouseButton:
+		return (a as InputEventMouseButton).button_index == (b as InputEventMouseButton).button_index
+	return false
+
+
+func _event_is_move_key(event: InputEvent) -> bool:
+	if not event is InputEventKey:
+		return false
+	var key_event := event as InputEventKey
+	var code := key_event.physical_keycode if key_event.physical_keycode != KEY_NONE else key_event.keycode
+	return code in _MOVE_KEYS
 
 
 func _ensure_actions_exist() -> void:

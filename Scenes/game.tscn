@@ -14,7 +14,8 @@ size = Vector2(8000, 80)
 
 [node name="Game" type="Node2D"]
 
-[node name="DuskClouds" type="ParallaxBackground" parent="."]
+[node name="DuskClouds" type="Node2D" parent="."]
+z_index = -80
 script = ExtResource("8_clouds")
 
 [node name="Terrain" type="TileMapLayer" parent="."]
