@@ -2,18 +2,18 @@
 
 importer="font_data_dynamic"
 type="FontFile"
-uid="uid://fwp8wp7t7pr8"
-path="res://.godot/imported/PixelOperator8-Bold.ttf-18d3f5771d654272ea5e81396761520b.fontdata"
+uid="uid://b5qsylapq2x14"
+path="res://.godot/imported/kenpixel_mini_square.ttf-c29ceb1a08b38473d98304a7a04554c7.fontdata"
 
 [deps]
 
-source_file="res://Assets/fonts/PixelOperator8-Bold.ttf"
-dest_files=["res://.godot/imported/PixelOperator8-Bold.ttf-18d3f5771d654272ea5e81396761520b.fontdata"]
+source_file="res://Assets/fonts/kenpixel_mini_square.ttf"
+dest_files=["res://.godot/imported/kenpixel_mini_square.ttf-c29ceb1a08b38473d98304a7a04554c7.fontdata"]
 
 [params]
 
 Rendering=null
-antialiasing=1
+antialiasing=0
 generate_mipmaps=false
 disable_embedded_bitmaps=true
 multichannel_signed_distance_field=false
@@ -22,8 +22,8 @@ msdf_size=48
 allow_system_fallback=true
 force_autohinter=false
 modulate_color_glyphs=false
-hinting=1
-subpixel_positioning=1
+hinting=0
+subpixel_positioning=0
 keep_rounding_remainders=true
 oversampling=0.0
 Fallbacks=null

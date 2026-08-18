@@ -1,17 +1,44 @@
-[gd_scene load_steps=4 format=3 uid="uid://cdefendhud00001"]
+[gd_scene load_steps=11 format=3 uid="uid://cdefendhud00001"]
 
 [ext_resource type="Script" path="res://Scripts/defend_hud.gd" id="1_hud"]
+[ext_resource type="FontFile" uid="uid://bv3x6hst6itx7" path="res://Assets/fonts/kenpixel_mini.ttf" id="2_font"]
+[ext_resource type="FontFile" uid="uid://b5qsylapq2x14" path="res://Assets/fonts/kenpixel_mini_square.ttf" id="3_font_title"]
+[ext_resource type="Texture2D" uid="uid://e0pbd0etqg5b" path="res://Assets/sprites/hud_panel.png" id="4_panel"]
+[ext_resource type="Texture2D" uid="uid://dg1s73isold2a" path="res://Assets/sprites/water_bar_frame.png" id="5_water_frame"]
+[ext_resource type="Texture2D" uid="uid://c7q0b0vqqafbi" path="res://Assets/sprites/water_bar_fill.png" id="6_water_fill"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_water_bg"]
-bg_color = Color(0.05, 0.06, 0.09, 0.92)
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_panel"]
+content_margin_left = 16.0
+content_margin_top = 12.0
+content_margin_right = 16.0
+content_margin_bottom = 12.0
+texture = ExtResource("4_panel")
+texture_margin_left = 6.0
+texture_margin_top = 6.0
+texture_margin_right = 6.0
+texture_margin_bottom = 6.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_bg"]
+bg_color = Color(0.1, 0.06, 0.05, 0.95)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
-border_color = Color(0.12, 0.16, 0.22, 1)
+border_color = Color(0.48, 0.28, 0.2, 1)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_water_fill"]
-bg_color = Color(0.18, 0.38, 0.55, 1)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_fill"]
+bg_color = Color(0.72, 0.38, 0.22, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tank_bg"]
+bg_color = Color(0.07, 0.08, 0.1, 0.95)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.28, 0.4, 0.45, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tank_fill"]
+bg_color = Color(0.32, 0.55, 0.5, 1)
 
 [node name="DefendHudLayer" type="CanvasLayer"]
 layer = 10
@@ -25,83 +52,191 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+texture_filter = 1
 script = ExtResource("1_hud")
 
 [node name="Margin" type="MarginContainer" parent="DefendHud"]
 layout_mode = 1
-anchors_preset = 10
+anchors_preset = 12
+anchor_top = 1.0
 anchor_right = 1.0
-offset_bottom = 128.0
+anchor_bottom = 1.0
+offset_top = -340.0
 grow_horizontal = 2
-theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 8
-theme_override_constants/margin_right = 12
+grow_vertical = 0
+mouse_filter = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
 
-[node name="VBox" type="VBoxContainer" parent="DefendHud/Margin"]
+[node name="Panel" type="PanelContainer" parent="DefendHud/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 6
+mouse_filter = 2
+size_flags_vertical = 8
+theme_override_styles/panel = SubResource("StyleBoxTexture_panel")
 
-[node name="WaterRow" type="HBoxContainer" parent="DefendHud/Margin/VBox"]
+[node name="VBox" type="VBoxContainer" parent="DefendHud/Margin/Panel"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="WaterTitle" type="Label" parent="DefendHud/Margin/VBox/WaterRow"]
-custom_minimum_size = Vector2(56, 0)
+[node name="WaterRow" type="HBoxContainer" parent="DefendHud/Margin/Panel/VBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 10
-text = "Water"
+theme_override_constants/separation = 12
+
+[node name="WaterTitle" type="Label" parent="DefendHud/Margin/Panel/VBox/WaterRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font_title")
+theme_override_font_sizes/font_size = 32
+text = "WATER"
 vertical_alignment = 1
 
-[node name="WaterBar" type="ProgressBar" parent="DefendHud/Margin/VBox/WaterRow"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(220, 14)
+[node name="WaterBarHost" type="Control" parent="DefendHud/Margin/Panel/VBox/WaterRow"]
+custom_minimum_size = Vector2(280, 36)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_styles/background = SubResource("StyleBoxFlat_water_bg")
-theme_override_styles/fill = SubResource("StyleBoxFlat_water_fill")
-max_value = 1000.0
-show_percentage = false
+size_flags_vertical = 4
+mouse_filter = 2
 
-[node name="WaterLabel" type="Label" parent="DefendHud/Margin/VBox/WaterRow"]
+[node name="WaterFrame" type="NinePatchRect" parent="DefendHud/Margin/Panel/VBox/WaterRow/WaterBarHost"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("5_water_frame")
+patch_margin_left = 2
+patch_margin_top = 2
+patch_margin_right = 2
+patch_margin_bottom = 2
+axis_stretch_horizontal = 1
+axis_stretch_vertical = 1
+
+[node name="WaterBar" type="TextureProgressBar" parent="DefendHud/Margin/Panel/VBox/WaterRow/WaterBarHost"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 0)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 3.0
+offset_top = 3.0
+offset_right = -3.0
+offset_bottom = -3.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+max_value = 1000.0
+nine_patch_stretch = true
+texture_progress = ExtResource("6_water_fill")
+tint_progress = Color(0.35, 0.72, 0.78, 1)
+
+[node name="WaterLabel" type="Label" parent="DefendHud/Margin/Panel/VBox/WaterRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(260, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 10
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 32
 text = "0 / 1000 gal"
 horizontal_alignment = 2
 vertical_alignment = 1
 
-[node name="GpmLabel" type="Label" parent="DefendHud/Margin/VBox/WaterRow"]
+[node name="GpmLabel" type="Label" parent="DefendHud/Margin/Panel/VBox/WaterRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(72, 0)
+custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 10
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 32
 text = "0.0 gpm"
 horizontal_alignment = 2
 vertical_alignment = 1
 
-[node name="StatusLabel" type="Label" parent="DefendHud/Margin/VBox"]
-unique_name_in_owner = true
+[node name="MikeRow" type="HBoxContainer" parent="DefendHud/Margin/Panel/VBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 10
-text = "Build a Main Hub from Utility (B)"
+theme_override_constants/separation = 12
 
-[node name="MikeHealthLabel" type="Label" parent="DefendHud/Margin/VBox"]
+[node name="MikeTitle" type="Label" parent="DefendHud/Margin/Panel/VBox/MikeRow"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 10
-text = "Mike HP: 50 / 50"
+theme_override_fonts/font = ExtResource("3_font_title")
+theme_override_font_sizes/font_size = 32
+text = "MIKE"
+vertical_alignment = 1
 
-[node name="HealthLabel" type="Label" parent="DefendHud/Margin/VBox"]
+[node name="MikeHealthBar" type="ProgressBar" parent="DefendHud/Margin/Panel/VBox/MikeRow"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(280, 36)
 layout_mode = 2
-theme_override_font_sizes/font_size = 10
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_hp_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_hp_fill")
+max_value = 50.0
+value = 50.0
+show_percentage = false
+
+[node name="MikeHealthLabel" type="Label" parent="DefendHud/Margin/Panel/VBox/MikeRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 32
+text = "50 / 50"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="TankRow" type="HBoxContainer" parent="DefendHud/Margin/Panel/VBox"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="TankTitle" type="Label" parent="DefendHud/Margin/Panel/VBox/TankRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font_title")
+theme_override_font_sizes/font_size = 32
+text = "TANK"
+vertical_alignment = 1
+
+[node name="TankHealthBar" type="ProgressBar" parent="DefendHud/Margin/Panel/VBox/TankRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(280, 36)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_tank_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_tank_fill")
+max_value = 100.0
+show_percentage = false
+
+[node name="HealthLabel" type="Label" parent="DefendHud/Margin/Panel/VBox/TankRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(320, 0)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 32
 text = ""
+horizontal_alignment = 2
+vertical_alignment = 1
 
-[node name="CrewLabel" type="Label" parent="DefendHud/Margin/VBox"]
+[node name="StatusLabel" type="Label" parent="DefendHud/Margin/Panel/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 10
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 32
+text = "Build a Main Hub from Utility (B)"
+autowrap_mode = 3
+
+[node name="CrewLabel" type="Label" parent="DefendHud/Margin/Panel/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 32
 text = "Hired: 0"
 
 [node name="GameOver" type="ColorRect" parent="DefendHud"]
@@ -115,7 +250,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 0
-color = Color(0.02, 0.03, 0.05, 0.78)
+color = Color(0.06, 0.04, 0.03, 0.82)
 
 [node name="Center" type="CenterContainer" parent="DefendHud/GameOver"]
 layout_mode = 1
@@ -127,25 +262,28 @@ grow_vertical = 2
 
 [node name="Panel" type="VBoxContainer" parent="DefendHud/GameOver/Center"]
 layout_mode = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 18
 
 [node name="Title" type="Label" parent="DefendHud/GameOver/Center/Panel"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
+theme_override_fonts/font = ExtResource("3_font_title")
+theme_override_font_sizes/font_size = 32
 text = "Game Over"
 horizontal_alignment = 1
 
 [node name="Subtitle" type="Label" parent="DefendHud/GameOver/Center/Panel"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 10
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 32
 text = "Fat Mike was killed."
 horizontal_alignment = 1
 
 [node name="MenuButton" type="Button" parent="DefendHud/GameOver/Center/Panel"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(220, 36)
+custom_minimum_size = Vector2(360, 56)
 layout_mode = 2
-theme_override_font_sizes/font_size = 10
+theme_override_fonts/font = ExtResource("3_font_title")
+theme_override_font_sizes/font_size = 32
 text = "Return to Menu"
 
 [connection signal="pressed" from="DefendHud/GameOver/Center/Panel/MenuButton" to="DefendHud" method="_on_game_over_menu_pressed"]
