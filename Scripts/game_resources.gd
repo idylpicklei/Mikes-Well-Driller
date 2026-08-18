@@ -3,7 +3,9 @@ extends Node
 signal water_changed(current: int, maximum: int)
 signal gold_changed(current: int)
 
-var water: int = 0
+const STARTING_WATER := 100
+
+var water: int = STARTING_WATER
 var water_max: int = 1000
 var gold: int = 0
 
@@ -59,3 +61,8 @@ func set_gold(amount: int) -> void:
 		return
 	gold = next
 	gold_changed.emit(gold)
+
+
+func reset_run() -> void:
+	set_water(STARTING_WATER)
+	set_gold(0)

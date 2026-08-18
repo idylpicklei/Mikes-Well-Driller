@@ -1,5 +1,8 @@
 extends Control
 
+const START_MENU_SCENE := "res://Scenes/start_menu.tscn"
+const FONT_PATH := "res://Assets/fonts/PixelOperator8-Bold.ttf"
+
 @onready var _status: Label = %StatusLabel
 @onready var _health: Label = %HealthLabel
 @onready var _water_bar: ProgressBar = %WaterBar
@@ -7,11 +10,19 @@ extends Control
 @onready var _gpm_label: Label = %GpmLabel
 @onready var _gold_bar: ProgressBar = %GoldBar
 @onready var _gold_label: Label = %GoldLabel
+@onready var _game_over: ColorRect = %GameOver
+@onready var _menu_button: Button = %MenuButton
 
 var _hub: Node = null
+var _font: Font
 
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	_font = load(FONT_PATH)
+	_game_over.add_to_group("game_over")
+	_apply_game_over_fonts()
+	_game_over.visible = false
 	_set_idle_status()
 	_refresh_water(GameResources.water, GameResources.water_max)
 	_refresh_gold(GameResources.gold)
@@ -22,6 +33,14 @@ func _ready() -> void:
 	_refresh_gpm()
 	set_process(true)
 	call_deferred("_connect_signals")
+
+
+func _apply_game_over_fonts() -> void:
+	if _font == null:
+		return
+	for node in _game_over.find_children("*", "Label", true, false):
+		(node as Label).add_theme_font_override("font", _font)
+	_menu_button.add_theme_font_override("font", _font)
 
 
 func _connect_signals() -> void:
@@ -51,15 +70,20 @@ func _refresh_gpm() -> void:
 
 func _on_item_chosen(_category_id: StringName, item_id: StringName) -> void:
 	if item_id == &"main_hub":
-		_status.text = "Place Main Hub: click ground, right-click cancel"
+		var cost := int(BuildCatalog.placeable(&"main_hub").get("cost_water", 0))
+		_status.text = "Place Main Hub (%d gal): click ground, right-click cancel" % cost
 	elif item_id == &"well":
 		var def := BuildCatalog.placeable(&"well")
 		var max_count := int(def.get("max_count", 5))
+		var cost := int(def.get("cost_water", 0))
 		var count := get_tree().get_nodes_in_group("well").size()
 		if count >= max_count:
 			_status.text = "Well limit reached (%d)" % max_count
 		else:
-			_status.text = "Place Well (%d/%d): click ground, right-click cancel" % [count, max_count]
+			_status.text = "Place Well (%d/%d, %d gal): click ground, right-click cancel" % [count, max_count, cost]
+	elif item_id == &"wall":
+		var cost := int(BuildCatalog.placeable(&"wall").get("cost_water", 0))
+		_status.text = "Place Wall (%d gal): click ground, right-click cancel" % cost
 
 
 func _on_hub_placed(hub: Node2D) -> void:
@@ -91,6 +115,27 @@ func _on_hub_destroyed() -> void:
 	_hub = null
 	_health.text = "Hub destroyed!"
 	_status.text = "The Main Hub was lost."
+	_show_game_over()
+
+
+func _show_game_over() -> void:
+	if BuildMenu.is_open:
+		BuildMenu.close_menu()
+	BuildMenu.is_open = false
+	BuildPlacer.is_placing = false
+	PauseMenu.is_open = false
+	_game_over.visible = true
+	get_tree().paused = true
+
+
+func _on_game_over_menu_pressed() -> void:
+	_game_over.visible = false
+	BuildMenu.is_open = false
+	BuildMenu.block_shoot = false
+	BuildPlacer.is_placing = false
+	PauseMenu.is_open = false
+	get_tree().paused = false
+	get_tree().change_scene_to_file(START_MENU_SCENE)
 
 
 func _set_idle_status() -> void:

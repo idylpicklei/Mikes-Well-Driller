@@ -46,6 +46,8 @@ func _input(event: InputEvent) -> void:
 
 
 func _open_pause() -> void:
+	if _game_over_visible():
+		return
 	if BuildMenu.is_open:
 		BuildMenu.close_menu()
 	is_open = true
@@ -54,6 +56,13 @@ func _open_pause() -> void:
 	_show_view(View.MAIN)
 	show()
 	get_tree().paused = true
+
+
+func _game_over_visible() -> bool:
+	for node in get_tree().get_nodes_in_group("game_over"):
+		if node is CanvasItem and (node as CanvasItem).visible:
+			return true
+	return false
 
 
 func _resume() -> void:

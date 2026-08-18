@@ -2,6 +2,7 @@ class_name BuildCatalog
 extends RefCounted
 
 ## Categories and items for the build wheel. Append here to add more later.
+## Only list items that BuildCatalog.placeable() can actually spawn.
 static func default_categories() -> Array[Dictionary]:
 	return [
 		{
@@ -13,21 +14,11 @@ static func default_categories() -> Array[Dictionary]:
 			],
 		},
 		{
-			"id": &"drill",
-			"label": "Drill",
-			"color": Color("d98a2b"),
-			"items": [
-				{"id": &"basic_drill", "label": "Basic Drill"},
-				{"id": &"heavy_drill", "label": "Heavy Drill"},
-			],
-		},
-		{
 			"id": &"defence",
 			"label": "Defence",
 			"color": Color("3d6ea8"),
 			"items": [
 				{"id": &"wall", "label": "Wall"},
-				{"id": &"turret", "label": "Turret"},
 			],
 		},
 		{
@@ -36,8 +27,6 @@ static func default_categories() -> Array[Dictionary]:
 			"color": Color("2f9e8f"),
 			"items": [
 				{"id": &"main_hub", "label": "Main Hub"},
-				{"id": &"platform", "label": "Platform"},
-				{"id": &"light", "label": "Light"},
 			],
 		},
 	]
@@ -49,6 +38,7 @@ static func placeable(item_id: StringName) -> Dictionary:
 			return {
 				"scene": preload("res://Scenes/main_hub.tscn"),
 				"unique_group": "main_hub",
+				"cost_water": 25,
 				"width": PlaceholderHub.WIDTH_TILES,
 				"height": PlaceholderHub.HEIGHT_TILES,
 				"sprite_offset": PlaceholderHub.SPRITE_OFFSET,
@@ -59,10 +49,20 @@ static func placeable(item_id: StringName) -> Dictionary:
 				"scene": preload("res://Scenes/well.tscn"),
 				"unique_group": "well",
 				"max_count": 5,
+				"cost_water": 15,
 				"width": PlaceholderWell.WIDTH_TILES,
 				"height": PlaceholderWell.HEIGHT_TILES,
 				"sprite_offset": PlaceholderWell.SPRITE_OFFSET,
 				"texture": PlaceholderWell.create_texture(),
+			}
+		&"wall":
+			return {
+				"scene": preload("res://Scenes/wall.tscn"),
+				"cost_water": 10,
+				"width": PlaceholderWall.WIDTH_TILES,
+				"height": PlaceholderWall.HEIGHT_TILES,
+				"sprite_offset": PlaceholderWall.SPRITE_OFFSET,
+				"texture": PlaceholderWall.create_texture(),
 			}
 		_:
 			return {}

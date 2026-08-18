@@ -126,10 +126,20 @@ func _place_item() -> void:
 	if _structures == null or _pending.is_empty() or _is_at_cap(_pending):
 		_cancel_placement()
 		return
+	if not _can_afford(_pending):
+		_valid = false
+		_ghost.modulate = Color(1, 0.4, 0.4, 0.65)
+		return
 
 	var scene: PackedScene = _pending.get("scene")
 	if scene == null:
 		_cancel_placement()
+		return
+
+	var cost := int(_pending.get("cost_water", 0))
+	if cost > 0 and not GameResources.spend_water(cost):
+		_valid = false
+		_ghost.modulate = Color(1, 0.4, 0.4, 0.65)
 		return
 
 	var node := scene.instantiate()
@@ -197,8 +207,13 @@ func _surface_grass_at(cell: Vector2i) -> Vector2i:
 	return Vector2i(-999999, -999999)
 
 
+func _can_afford(def: Dictionary) -> bool:
+	var cost := int(def.get("cost_water", 0))
+	return cost <= 0 or GameResources.water >= cost
+
+
 func _is_valid_position(world_pos: Vector2) -> bool:
-	if _pending.is_empty() or _is_at_cap(_pending):
+	if _pending.is_empty() or _is_at_cap(_pending) or not _can_afford(_pending):
 		return false
 
 	var grass := _surface_grass_at(_world_to_cell(world_pos))
