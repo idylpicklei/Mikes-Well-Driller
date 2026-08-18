@@ -142,11 +142,21 @@ func _place_item() -> void:
 		_ghost.modulate = Color(1, 0.4, 0.4, 0.65)
 		return
 
+	var place_origin := global_position
 	var node := scene.instantiate()
-	node.position = _structures.to_local(global_position)
+	node.position = _structures.to_local(place_origin)
 	_structures.add_child(node)
 	if _pending_item == &"main_hub":
 		hub_placed.emit(node)
+	elif _pending_item == &"basic_drill":
+		var well := _find_attachable_well(place_origin)
+		if well == null or not node.has_method("attach_to_well") or not node.attach_to_well(well):
+			node.queue_free()
+			if cost > 0:
+				GameResources.add_water(cost)
+			_valid = false
+			_ghost.modulate = Color(1, 0.4, 0.4, 0.65)
+			return
 	BuildMenu.block_shoot = true
 	global_position = Vector2.ZERO
 	_cancel_placement()
@@ -230,20 +240,54 @@ func _is_valid_position(world_pos: Vector2) -> bool:
 		for dy in range(1, height + 1):
 			if _has_tile(ground + Vector2i(0, -dy)):
 				return false
-	if _pending_item == &"well" and _overlaps_wells(_origin_on_grass(grass)):
-		return false
+	var origin := _origin_on_grass(grass)
+	if _pending_item == &"well":
+		if _overlaps_group_footprints(origin, PlaceholderWell.SIZE, "well", PlaceholderWell.SIZE):
+			return false
+		if _overlaps_group_footprints(origin, PlaceholderWell.SIZE, "drill", PlaceholderDrill.SIZE):
+			return false
+	elif _pending_item == &"basic_drill":
+		if _overlaps_group_footprints(origin, PlaceholderDrill.SIZE, "well", PlaceholderWell.SIZE):
+			return false
+		if _overlaps_group_footprints(origin, PlaceholderDrill.SIZE, "drill", PlaceholderDrill.SIZE):
+			return false
+		if _find_attachable_well(origin) == null:
+			return false
 	return true
 
 
-func _overlaps_wells(origin: Vector2) -> bool:
-	var proposed := _footprint_rect(origin, PlaceholderWell.SIZE)
-	for node in get_tree().get_nodes_in_group("well"):
+func _overlaps_group_footprints(origin: Vector2, size: Vector2i, group: String, other_size: Vector2i) -> bool:
+	var proposed := _footprint_rect(origin, size)
+	for node in get_tree().get_nodes_in_group(group):
 		if not node is Node2D:
 			continue
-		var other := _footprint_rect((node as Node2D).global_position, PlaceholderWell.SIZE)
+		var other := _footprint_rect((node as Node2D).global_position, other_size)
 		if proposed.intersects(other):
 			return true
 	return false
+
+
+## 8-way adjacency: footprints must touch on an edge or corner (no gap).
+func _find_attachable_well(origin: Vector2) -> Node2D:
+	var proposed := _footprint_rect(origin, PlaceholderDrill.SIZE)
+	var best: Node2D = null
+	var best_dist := INF
+	for node in get_tree().get_nodes_in_group("well"):
+		if not node is Node2D:
+			continue
+		var well := node as Node2D
+		if well.has_method("has_drill") and well.has_drill():
+			continue
+		var well_rect := _footprint_rect(well.global_position, PlaceholderWell.SIZE)
+		if well_rect.intersects(proposed):
+			continue
+		if not well_rect.grow(1.0).intersects(proposed):
+			continue
+		var dist := origin.distance_squared_to(well.global_position)
+		if dist < best_dist:
+			best_dist = dist
+			best = well
+	return best
 
 
 func _footprint_rect(origin: Vector2, size: Vector2i) -> Rect2:

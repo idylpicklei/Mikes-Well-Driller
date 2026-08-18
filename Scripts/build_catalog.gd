@@ -14,6 +14,14 @@ static func default_categories() -> Array[Dictionary]:
 			],
 		},
 		{
+			"id": &"drill",
+			"label": "Drill",
+			"color": Color("d98a2b"),
+			"items": [
+				{"id": &"basic_drill", "label": "Basic Drill"},
+			],
+		},
+		{
 			"id": &"defence",
 			"label": "Defence",
 			"color": Color("3d6ea8"),
@@ -54,6 +62,15 @@ static func placeable(item_id: StringName) -> Dictionary:
 				"height": PlaceholderWell.HEIGHT_TILES,
 				"sprite_offset": PlaceholderWell.SPRITE_OFFSET,
 				"texture": PlaceholderWell.create_texture(),
+			}
+		&"basic_drill":
+			return {
+				"scene": preload("res://Scenes/drill.tscn"),
+				"cost_water": 20,
+				"width": PlaceholderDrill.WIDTH_TILES,
+				"height": PlaceholderDrill.HEIGHT_TILES,
+				"sprite_offset": PlaceholderDrill.SPRITE_OFFSET,
+				"texture": PlaceholderDrill.create_texture(),
 			}
 		&"wall":
 			return {

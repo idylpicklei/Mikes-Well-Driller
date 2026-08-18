@@ -85,6 +85,9 @@ func _on_item_chosen(_category_id: StringName, item_id: StringName) -> void:
 			_status.text = "Well limit reached (%d)" % max_count
 		else:
 			_status.text = "Place Well (%d/%d, %d gal): click ground, right-click cancel" % [count, max_count, cost]
+	elif item_id == &"basic_drill":
+		var cost := int(BuildCatalog.placeable(&"basic_drill").get("cost_water", 0))
+		_status.text = "Place Basic Drill (%d gal): next to a free well, right-click cancel" % cost
 	elif item_id == &"wall":
 		var cost := int(BuildCatalog.placeable(&"wall").get("cost_water", 0))
 		_status.text = "Place Wall (%d gal): click ground, right-click cancel" % cost
