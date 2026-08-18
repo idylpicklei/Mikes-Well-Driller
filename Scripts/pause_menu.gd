@@ -38,6 +38,8 @@ func _input(event: InputEvent) -> void:
 		elif is_open:
 			_resume()
 		else:
+			# Never leave PLACE X armed under the pause overlay.
+			_cancel_active_placement()
 			_open_pause()
 		get_viewport().set_input_as_handled()
 		return
@@ -54,11 +56,23 @@ func _input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 
+func _cancel_active_placement() -> void:
+	if not BuildPlacer.is_placing:
+		return
+	for node in get_tree().get_nodes_in_group("build_placer"):
+		if node.has_method("cancel_from_menu"):
+			node.cancel_from_menu()
+			return
+	BuildPlacer.is_placing = false
+	BuildMenu.block_shoot = false
+
+
 func _open_pause() -> void:
 	if _game_over_visible():
 		return
 	if BuildMenu.is_open:
 		BuildMenu.close_menu()
+	_cancel_active_placement()
 	is_open = true
 	_view = View.MAIN
 	_cancel_remap()

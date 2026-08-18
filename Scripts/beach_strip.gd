@@ -24,6 +24,7 @@ func setup(outward: float, overlap_px: float = 0.0) -> void:
 		child.free()
 
 	_build_acid_blend(outward, tile, count)
+	_build_underfill(outward, tile, count)
 	_build_ramp_collision(outward, tile, count, overlap)
 	_build_sprites(outward, tile, count, tex)
 
@@ -46,6 +47,31 @@ func _build_acid_blend(outward: float, tile: float, count: int) -> void:
 	blend.color = BLEND_COLOR
 	blend.z_index = -1
 	add_child(blend)
+
+
+## Stack acid_ocean.png row-1 fill under the beach so the shore cross-section is not a void.
+func _build_underfill(outward: float, tile: float, count: int) -> void:
+	var acid_tex := PlaceholderAcidOcean.create_texture()
+	if acid_tex == null:
+		return
+	# Enough fill rows to read as solid under the ramp (TileMap also fills to bedrock).
+	var fill_rows := 8
+	for i in count:
+		var depth: float = DEPTHS_PX[mini(i, DEPTHS_PX.size() - 1)]
+		var along := (i + 0.5) * tile
+		for row in fill_rows:
+			var sprite := Sprite2D.new()
+			sprite.texture = acid_tex
+			sprite.hframes = PlaceholderAcidOcean.COLS
+			sprite.vframes = PlaceholderAcidOcean.ROWS
+			# Row 1 = fill (no foam). Column deepens slightly outward.
+			var atlas_col := clampi(i, 0, PlaceholderAcidOcean.COLS - 1)
+			sprite.frame = PlaceholderAcidOcean.COLS + atlas_col
+			sprite.centered = true
+			sprite.position = Vector2(outward * along, depth + tile * 1.5 + float(row) * tile)
+			sprite.z_index = -2
+			sprite.modulate = Color(1.05, 1.2, 1.0, 0.95 if row > 0 else 0.75)
+			add_child(sprite)
 
 
 func _build_ramp_collision(outward: float, tile: float, count: int, overlap: float) -> void:
