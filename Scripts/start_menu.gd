@@ -118,6 +118,7 @@ func _cancel_remap() -> void:
 
 func _on_start_pressed() -> void:
 	GameResources.reset_run()
+	WaveDirector.start_run()
 	BuildMenu.is_open = false
 	BuildMenu.block_shoot = false
 	BuildPlacer.is_placing = false

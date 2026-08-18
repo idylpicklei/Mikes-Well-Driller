@@ -1,10 +1,8 @@
 extends Node2D
 
 const ENEMY_SCENE := preload("res://Scenes/enemy.tscn")
-const SPAWN_INTERVAL := 5.0
-const MAX_ALIVE := 6
 
-var _timer := SPAWN_INTERVAL
+var _timer := 0.0
 var _alive: Array[Node] = []
 
 
@@ -15,12 +13,16 @@ func _ready() -> void:
 	if sprite:
 		sprite.texture = PlaceholderSpawner.create_texture()
 		sprite.position = PlaceholderSpawner.SPRITE_OFFSET
+	# Match prior feel: first spawn after ~one base interval, not immediately.
+	_timer = WaveDirector.spawn_interval()
 
 
 func _process(delta: float) -> void:
 	_prune_dead()
+	var interval := WaveDirector.spawn_interval()
+	var cap := WaveDirector.max_alive()
 	_timer += delta
-	if _timer >= SPAWN_INTERVAL and _alive.size() < MAX_ALIVE:
+	if _timer >= interval and _alive.size() < cap:
 		_timer = 0.0
 		_spawn()
 
@@ -30,6 +32,8 @@ func _spawn() -> void:
 	if host == null:
 		return
 	var enemy := ENEMY_SCENE.instantiate()
+	if enemy.has_method("configure"):
+		enemy.configure(WaveDirector.enemy_health())
 	host.add_child(enemy)
 	var side := -1.0 if randf() < 0.5 else 1.0
 	var offset_x := (PlaceholderSpawner.SIZE.x * 0.5) + (PlaceholderTileset.TILE_SIZE * 1.5)
