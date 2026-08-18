@@ -177,10 +177,10 @@ func _draw() -> void:
 
 		var mid := (start + stop) * 0.5
 		var label_pos := center + Vector2(cos(mid), sin(mid)) * ((CATEGORY_INNER + CATEGORY_OUTER) * 0.5 * scale_t)
-		_draw_label(label_pos, _label_of(categories[i]), 16, Color.WHITE)
+		_draw_label(label_pos, _label_of(categories[i]), 16, Color(0.78, 0.8, 0.82))
 
-	draw_circle(center, HUB_RADIUS * scale_t, Color(0.08, 0.09, 0.1, 0.94))
-	draw_arc(center, HUB_RADIUS * scale_t, 0.0, TAU, 48, Color(0.9, 0.9, 0.92, 0.85), 2.0, true)
+	draw_circle(center, HUB_RADIUS * scale_t, Color(0.06, 0.07, 0.09, 0.94))
+	draw_arc(center, HUB_RADIUS * scale_t, 0.0, TAU, 48, Color(0.55, 0.58, 0.62, 0.85), 2.0, true)
 
 	var hub_title := "BUILD"
 	var hub_sub := "Pick a category"
@@ -196,9 +196,9 @@ func _draw() -> void:
 		hub_title = _label_for(selected_category)
 		hub_sub = "Selected"
 
-	_draw_label(center + Vector2(0, -8), hub_title, 16, Color.WHITE)
-	_draw_label(center + Vector2(0, 12), hub_sub, 8, Color(0.8, 0.82, 0.85))
-	_draw_label(Vector2(size.x * 0.5, size.y * 0.5 + ITEM_OUTER * scale_t + 36.0), "B  close", 8, Color(0.75, 0.78, 0.8, 0.9))
+	_draw_label(center + Vector2(0, -8), hub_title, 16, Color(0.82, 0.84, 0.86))
+	_draw_label(center + Vector2(0, 12), hub_sub, 8, Color(0.62, 0.66, 0.7))
+	_draw_label(Vector2(size.x * 0.5, size.y * 0.5 + ITEM_OUTER * scale_t + 36.0), "B  close", 8, Color(0.55, 0.58, 0.62, 0.9))
 
 
 func _draw_items(center: Vector2, category_index: int, category_count: int, items: Array, scale_t: float) -> void:
@@ -219,7 +219,7 @@ func _draw_items(center: Vector2, category_index: int, category_count: int, item
 		_draw_ring_slice(center, ITEM_INNER * scale_t, ITEM_OUTER * scale_t, start, stop, fill)
 		var mid := (start + stop) * 0.5
 		var pos := center + Vector2(cos(mid), sin(mid)) * ((ITEM_INNER + ITEM_OUTER) * 0.5 * scale_t)
-		_draw_label(pos, _label_of(items[i]), 8, Color.WHITE)
+		_draw_label(pos, _label_of(items[i]), 8, Color(0.78, 0.8, 0.82))
 
 
 func _draw_ring_slice(center: Vector2, inner_r: float, outer_r: float, start: float, stop: float, color: Color) -> void:

@@ -21,6 +21,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_font = load(FONT_PATH)
 	_game_over.add_to_group("game_over")
+	_apply_hud_colors()
 	_apply_game_over_fonts()
 	_game_over.visible = false
 	_set_idle_status()
@@ -32,11 +33,25 @@ func _ready() -> void:
 	call_deferred("_connect_signals")
 
 
+func _apply_hud_colors() -> void:
+	var text := Color(0.72, 0.76, 0.8)
+	var soft := Color(0.58, 0.62, 0.68)
+	for node in find_children("*", "Label", true, false):
+		var label := node as Label
+		if _game_over.is_ancestor_of(label):
+			continue
+		label.add_theme_color_override("font_color", text)
+	_status.add_theme_color_override("font_color", soft)
+
+
 func _apply_game_over_fonts() -> void:
 	if _font == null:
 		return
+	var text := Color(0.78, 0.8, 0.84)
 	for node in _game_over.find_children("*", "Label", true, false):
-		(node as Label).add_theme_font_override("font", _font)
+		var label := node as Label
+		label.add_theme_font_override("font", _font)
+		label.add_theme_color_override("font_color", text)
 	_menu_button.add_theme_font_override("font", _font)
 
 

@@ -43,8 +43,13 @@ func _input(event: InputEvent) -> void:
 func _apply_fonts() -> void:
 	if _font == null:
 		return
+	var text := Color(0.78, 0.8, 0.84)
+	var muted := Color(0.58, 0.62, 0.68)
 	for node in find_children("*", "Label", true, false):
-		(node as Label).add_theme_font_override("font", _font)
+		var label := node as Label
+		label.add_theme_font_override("font", _font)
+		label.add_theme_color_override("font_color", text)
+	_remap_hint.add_theme_color_override("font_color", muted)
 	for node in find_children("*", "Button", true, false):
 		(node as Button).add_theme_font_override("font", _font)
 

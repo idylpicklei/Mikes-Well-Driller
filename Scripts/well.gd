@@ -86,7 +86,7 @@ func _draw() -> void:
 	var progress := clampf(_timer / duration, 0.0, 1.0)
 	var top := PlaceholderWell.SPRITE_OFFSET.y - PlaceholderWell.SIZE.y * 0.5 - 8.0
 	var origin := Vector2(-BAR_SIZE.x * 0.5, top)
-	draw_rect(Rect2(origin, BAR_SIZE), Color(0.08, 0.09, 0.1, 0.9))
-	var fill := Color("3d6ea8") if _deployed else Color("d98a2b")
+	draw_rect(Rect2(origin, BAR_SIZE), Color(0.05, 0.06, 0.08, 0.9))
+	var fill := Color("2e5478") if _deployed else Color("a06a28")
 	draw_rect(Rect2(origin, Vector2(BAR_SIZE.x * progress, BAR_SIZE.y)), fill)
-	draw_rect(Rect2(origin, BAR_SIZE), Color(0.05, 0.05, 0.06, 0.9), false, 1.0)
+	draw_rect(Rect2(origin, BAR_SIZE), Color(0.04, 0.05, 0.06, 0.9), false, 1.0)

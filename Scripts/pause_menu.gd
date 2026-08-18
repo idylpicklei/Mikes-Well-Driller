@@ -18,8 +18,17 @@ var _bind_buttons: Dictionary = {}
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	hide()
+	_apply_night_colors()
 	_build_bind_rows()
 	_show_view(View.MAIN)
+
+
+func _apply_night_colors() -> void:
+	var text := Color(0.78, 0.8, 0.84)
+	var muted := Color(0.58, 0.62, 0.68)
+	for node in find_children("*", "Label", true, false):
+		(node as Label).add_theme_color_override("font_color", text)
+	_remap_hint.add_theme_color_override("font_color", muted)
 
 
 func _input(event: InputEvent) -> void:
