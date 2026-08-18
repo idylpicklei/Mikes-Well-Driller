@@ -45,6 +45,8 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Never take arrow/D focus — that was opening/navigating the wheel off movement keys.
+	focus_mode = Control.FOCUS_NONE
 	texture_filter = TEXTURE_FILTER_NEAREST
 	_font_body = load(FONT_BODY_PATH)
 	_font_title = load(FONT_TITLE_PATH)
@@ -110,6 +112,7 @@ func _set_open(open: bool) -> void:
 		# Clear stale armed highlight; B is handled here so BuildPlacer never sees it.
 		selected_item = &""
 		_cancel_armed_placement()
+		# Catalog open = full world freeze (combat, thirst, spawns, first-ship timer).
 		get_tree().paused = true
 	else:
 		# Keep pause if Esc pause or Game Over owns it; else resume so placement can run.
@@ -128,7 +131,13 @@ func _cancel_armed_placement() -> void:
 func _input(event: InputEvent) -> void:
 	if PauseMenu.is_open or _game_over_visible():
 		return
-	if event.is_action_pressed("build_menu") and not event.is_echo():
+	# B only — never D / arrows / jump (stale dual-binds used to open the wheel).
+	if InputBindings.is_build_toggle_event(event):
+		if BuildPlacer.is_placing and not is_open:
+			# B cancels place mode and returns shoot to LMB — does not re-open the wheel.
+			_cancel_armed_placement()
+			get_viewport().set_input_as_handled()
+			return
 		toggle()
 		get_viewport().set_input_as_handled()
 		return
@@ -149,12 +158,16 @@ func _gui_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
+	# No auto-close timer — stays open until B / Esc / outside click / item pick.
 	var target := 1.0 if is_open else 0.0
 	var next := move_toward(_open_t, target, delta * 8.0)
 	if not is_equal_approx(next, _open_t):
 		_open_t = next
 		queue_redraw()
 	if is_open:
+		# Re-assert pause every frame so nothing else can unstick the world while open.
+		if not PauseMenu.is_open and not _game_over_visible():
+			get_tree().paused = true
 		_update_hover()
 
 

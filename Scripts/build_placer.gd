@@ -3,6 +3,7 @@ extends Node2D
 
 signal hub_placed(hub: Node2D)
 signal placement_cancelled
+signal structure_placed(item_id: StringName, node: Node)
 
 const TILE_SIZE := PlaceholderTileset.TILE_SIZE
 const FONT_PATH := "res://Assets/fonts/PixelOperator8-Bold.ttf"
@@ -16,6 +17,7 @@ var _font: Font
 var _pending_item: StringName = &""
 var _pending: Dictionary = {}
 var _valid := false
+## Ignore the catalog LMB that armed us — never blocks cancel (RMB / B).
 var _wait_for_release := false
 var _popup_boost := 0
 var _show_efficiency := false
@@ -23,12 +25,22 @@ var _show_efficiency := false
 
 func _ready() -> void:
 	add_to_group("build_placer")
+	# Keep ghost + cancel responsive even if a pause edge-case flickers.
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	_terrain = get_parent().get_node_or_null("Terrain") as TileMapLayer
 	_structures = get_parent().get_node_or_null("Structures") as Node2D
 	_create_ghost()
 	_font = load(FONT_PATH)
 	set_process(false)
 	call_deferred("_connect_build_menu")
+	call_deferred("_resolve_terrain")
+
+
+func _resolve_terrain() -> void:
+	if _terrain == null:
+		_terrain = get_tree().get_first_node_in_group("terrain") as TileMapLayer
+	if _structures == null and get_parent():
+		_structures = get_parent().get_node_or_null("Structures") as Node2D
 
 
 func _connect_build_menu() -> void:
@@ -45,6 +57,7 @@ func _on_item_chosen(_category_id: StringName, item_id: StringName) -> void:
 
 
 func _start_placement(item_id: StringName, def: Dictionary) -> void:
+	_resolve_terrain()
 	if _is_at_cap(def):
 		return
 	_pending_item = item_id
@@ -55,10 +68,12 @@ func _start_placement(item_id: StringName, def: Dictionary) -> void:
 	_ghost.visible = true
 	z_index = 20
 	set_process(true)
+	# Snap ghost under the cursor immediately — don't wait a process tick.
+	_refresh_ghost_at_mouse()
 
 
 func _cancel_placement() -> void:
-	if not is_placing:
+	if not is_placing and _pending_item == &"":
 		return
 	is_placing = false
 	_pending_item = &""
@@ -83,16 +98,36 @@ func _create_ghost() -> void:
 	_ghost.centered = true
 	_ghost.modulate = Color(1, 1, 1, 0.55)
 	_ghost.visible = false
+	_ghost.z_index = 1
 	add_child(_ghost)
 
 
 func _apply_ghost(def: Dictionary) -> void:
-	_ghost.texture = def.get("texture") as Texture2D
+	var tex := def.get("texture") as Texture2D
+	if tex == null and def.has("scene"):
+		# Last-resort: still show a footprint so place mode is never "invisible".
+		tex = _make_fallback_ghost(int(def.get("width", 1)), int(def.get("height", 1)))
+	_ghost.texture = tex
 	_ghost.position = def.get("sprite_offset", Vector2.ZERO)
+	_ghost.visible = is_placing
+
+
+func _make_fallback_ghost(width_tiles: int, height_tiles: int) -> Texture2D:
+	var w := maxi(width_tiles, 1) * TILE_SIZE
+	var h := maxi(height_tiles, 1) * TILE_SIZE
+	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0.45, 0.85, 0.55, 0.55))
+	return ImageTexture.create_from_image(img)
 
 
 func _process(_delta: float) -> void:
-	if not is_placing or _terrain == null:
+	if not is_placing:
+		return
+	# Placement itself must not run while the B-catalog owns the pause freeze.
+	if BuildMenu.is_open or PauseMenu.is_open:
+		return
+	_resolve_terrain()
+	if _terrain == null:
 		return
 	if _wait_for_release and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 		_wait_for_release = false
@@ -101,11 +136,15 @@ func _process(_delta: float) -> void:
 
 
 func _refresh_ghost_at_mouse() -> void:
+	if _terrain == null or _pending.is_empty():
+		return
 	var mouse := get_global_mouse_position()
 	global_position = _snap_position(mouse)
 	_valid = _is_valid_position(mouse)
 	_apply_ghost_tint()
 	_update_efficiency_popup()
+	if _ghost:
+		_ghost.visible = true
 
 
 func _apply_ghost_tint() -> void:
@@ -115,6 +154,9 @@ func _apply_ghost_tint() -> void:
 func _mark_invalid_ghost() -> void:
 	_valid = false
 	_apply_ghost_tint()
+	if _ghost:
+		_ghost.visible = true
+	queue_redraw()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -123,31 +165,33 @@ func _unhandled_input(event: InputEvent) -> void:
 	if BuildMenu.is_open or PauseMenu.is_open:
 		_cancel_placement()
 		return
+
+	# Cancel always works — even before the arming LMB is released.
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+		_cancel_placement()
+		get_viewport().set_input_as_handled()
+		return
+	if InputBindings.is_build_toggle_event(event) or event.is_action_pressed("pause"):
+		_cancel_placement()
+		get_viewport().set_input_as_handled()
+		return
+
 	if _wait_for_release:
 		return
 
-	if event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			# Re-snap + re-validate at click time so ghost never lies green on a refused click.
-			_refresh_ghost_at_mouse()
-			if _valid:
-				_place_item()
-			else:
-				_mark_invalid_ghost()
-			get_viewport().set_input_as_handled()
-		elif event.button_index == MOUSE_BUTTON_RIGHT:
-			_cancel_placement()
-			get_viewport().set_input_as_handled()
-		return
-
-	if event.is_action_pressed("pause") or event.is_action_pressed("build_menu"):
-		_cancel_placement()
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		# Re-snap + re-validate at click time so ghost never lies green on a refused click.
+		_refresh_ghost_at_mouse()
+		if _valid:
+			_place_item()
+		else:
+			_mark_invalid_ghost()
 		get_viewport().set_input_as_handled()
 
 
 func _place_item() -> void:
 	if _structures == null or _pending.is_empty() or _is_at_cap(_pending):
-		_cancel_placement()
+		_mark_invalid_ghost()
 		return
 	# Re-check occupancy at snap origin so invalid clicks never spend water.
 	if not _is_valid_origin(global_position) or not _can_afford(_pending):
@@ -156,7 +200,7 @@ func _place_item() -> void:
 
 	var scene: PackedScene = _pending.get("scene")
 	if scene == null:
-		_cancel_placement()
+		_mark_invalid_ghost()
 		return
 
 	var cost := int(_pending.get("cost_water", 0))
@@ -166,8 +210,24 @@ func _place_item() -> void:
 
 	var place_origin := global_position
 	var node := scene.instantiate()
+	if node == null:
+		if cost > 0:
+			GameResources.add_water(cost)
+		_mark_invalid_ghost()
+		return
+
 	node.position = _structures.to_local(place_origin)
 	_structures.add_child(node)
+	# Ensure the placed structure is actually in-tree and visible before we keep the spend.
+	if not is_instance_valid(node) or not node.is_inside_tree():
+		if cost > 0:
+			GameResources.add_water(cost)
+		_mark_invalid_ghost()
+		return
+	if node is CanvasItem:
+		(node as CanvasItem).visible = true
+		(node as CanvasItem).z_index = maxi((node as CanvasItem).z_index, 1)
+
 	if _pending_item == &"main_hub":
 		hub_placed.emit(node)
 	elif _pending_item == &"turret":
@@ -180,6 +240,10 @@ func _place_item() -> void:
 				GameResources.add_water(cost)
 			_mark_invalid_ghost()
 			return
+	elif _pending_item == &"well":
+		_ensure_well_visible(node)
+
+	structure_placed.emit(_pending_item, node)
 	BuildMenu.block_shoot = true
 	# Keep placing repeatables (walls/turrets/wells/drills); unique hub ends the mode.
 	if _pending_item == &"main_hub" or _is_at_cap(_pending):
@@ -188,6 +252,22 @@ func _place_item() -> void:
 	else:
 		_wait_for_release = true
 		_refresh_ghost_at_mouse()
+
+
+func _ensure_well_visible(node: Node) -> void:
+	if node == null:
+		return
+	if node is Node2D:
+		(node as Node2D).z_index = 2
+	var sprite := node.get_node_or_null("Sprite2D") as Sprite2D
+	if sprite == null:
+		return
+	if sprite.texture == null:
+		sprite.texture = PlaceholderWell.create_texture()
+	sprite.visible = true
+	sprite.centered = true
+	sprite.position = PlaceholderWell.SPRITE_OFFSET
+	sprite.modulate = Color(0.7, 0.7, 0.72, 1.0)
 
 
 func _orient_new_turret(turret: Node, place_origin: Vector2) -> void:

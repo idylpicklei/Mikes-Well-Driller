@@ -152,6 +152,8 @@ func _connect_signals() -> void:
 			placer.hub_placed.connect(_on_hub_placed)
 		if not placer.placement_cancelled.is_connected(_set_idle_status):
 			placer.placement_cancelled.connect(_set_idle_status)
+		if placer.has_signal("structure_placed") and not placer.structure_placed.is_connected(_on_structure_placed):
+			placer.structure_placed.connect(_on_structure_placed)
 
 	var menu := get_tree().get_first_node_in_group("build_menu") as BuildMenu
 	if menu and not menu.item_chosen.is_connected(_on_item_chosen):
@@ -159,6 +161,14 @@ func _connect_signals() -> void:
 
 	_bind_player(get_tree().get_first_node_in_group("player"))
 	_set_idle_status()
+
+
+func _on_structure_placed(item_id: StringName, _node: Node) -> void:
+	# Refresh place-mode tally (wells 1/5 etc.) so a successful spend is counted on the HUD.
+	if BuildPlacer.is_placing:
+		_on_item_chosen(&"", item_id)
+	elif item_id == &"well":
+		_refresh_gpm()
 
 
 func _bind_player(player: Node) -> void:
@@ -329,6 +339,10 @@ func _on_game_over_menu_pressed() -> void:
 
 func _set_idle_status() -> void:
 	if _hub:
+		if "is_tank_poisoned" in _hub and bool(_hub.is_tank_poisoned):
+			_status.text = "Tank poisoned — Mike is dying of thirst! (stored water is undrinkable)"
+		else:
+			_status.text = "Defend the Main Hub!"
 		return
 	_status.text = "Build a Main Hub from Utility (B)"
 

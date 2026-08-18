@@ -17,12 +17,17 @@ var _attached_drill: Node = null
 
 func _ready() -> void:
 	add_to_group("well")
-	z_index = 1
+	z_index = 2
 	_sprite = get_node_or_null("Sprite2D") as Sprite2D
-	if _sprite:
-		_sprite.texture = PlaceholderWell.create_texture()
-		_sprite.position = PlaceholderWell.SPRITE_OFFSET
-		_sprite.modulate = Color(0.7, 0.7, 0.72)
+	if _sprite == null:
+		_sprite = Sprite2D.new()
+		_sprite.name = "Sprite2D"
+		add_child(_sprite)
+	_sprite.texture = PlaceholderWell.create_texture()
+	_sprite.centered = true
+	_sprite.position = PlaceholderWell.SPRITE_OFFSET
+	_sprite.visible = true
+	_sprite.modulate = Color(0.7, 0.7, 0.72, 1.0)
 	_timer = 0.0
 	call_deferred("_resolve_efficiency")
 	set_process(true)
