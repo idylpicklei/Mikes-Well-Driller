@@ -107,12 +107,22 @@ func _set_open(open: bool) -> void:
 	if open:
 		_hovered_category = -1
 		_hovered_item = -1
+		# Clear stale armed highlight; B is handled here so BuildPlacer never sees it.
+		selected_item = &""
+		_cancel_armed_placement()
 		get_tree().paused = true
 	else:
 		# Keep pause if Esc pause or Game Over owns it; else resume so placement can run.
 		if not PauseMenu.is_open and not _game_over_visible():
 			get_tree().paused = false
 	queue_redraw()
+
+
+func _cancel_armed_placement() -> void:
+	for node in get_tree().get_nodes_in_group("build_placer"):
+		if node.has_method("cancel_from_menu"):
+			node.cancel_from_menu()
+			return
 
 
 func _input(event: InputEvent) -> void:
@@ -173,19 +183,30 @@ func _update_hover() -> void:
 
 
 func _on_click() -> void:
+	# Recompute hover from the click position — never arm from a stale process-frame index.
+	_update_hover()
 	var cats := _visible_categories()
 	if _hovered_item >= 0 and _hovered_category >= 0 and _hovered_category < cats.size():
 		var category: Dictionary = cats[_hovered_category]
 		var items: Array = _visible_items(category)
 		if _hovered_item < items.size():
-			selected_category = _id_of(category)
-			selected_item = _id_of(items[_hovered_item])
+			var item: Dictionary = items[_hovered_item]
+			var item_id := _id_of(item)
+			var category_id := _id_of(category)
+			# Guard: armed id must match the catalog entry we just resolved (not a parallel index).
+			if item_id == &"" or not BuildCatalog.is_available(item_id, get_tree()):
+				return
+			if BuildCatalog.placeable(item_id).is_empty():
+				return
+			selected_category = category_id
+			selected_item = item_id
 			category_chosen.emit(selected_category)
 			item_chosen.emit(selected_category, selected_item)
 			_set_open(false)
 			return
 	if _hovered_category >= 0 and _hovered_category < cats.size():
 		selected_category = _id_of(cats[_hovered_category])
+		selected_item = &""
 		category_chosen.emit(selected_category)
 		queue_redraw()
 		return
@@ -244,6 +265,9 @@ func _draw() -> void:
 	elif _hovered_category >= 0 and _hovered_category < cats.size():
 		hub_title = _label_of(cats[_hovered_category])
 		hub_sub = "Choose an item"
+	elif selected_item != &"":
+		hub_title = hub_title_for(selected_item)
+		hub_sub = "Armed"
 	elif selected_category != &"":
 		hub_title = _label_for(selected_category)
 		hub_sub = "Selected"
@@ -356,11 +380,13 @@ func _draw_items(center: Vector2, category_index: int, category_count: int, item
 	for i in count:
 		var start := cat_start + cat_span * (float(i) / count) + pad * cat_span
 		var stop := cat_start + cat_span * (float(i + 1) / count) - pad * cat_span
+		var item_id := _id_of(items[i])
 		var hovered: bool = category_index == _hovered_category and i == _hovered_item
+		var armed: bool = item_id != &"" and item_id == selected_item
 		var fill := Color(0.14, 0.11, 0.10, 0.9)
-		if hovered:
+		if hovered or armed:
 			fill = _color_of(cats[category_index])
-			fill.a = 0.92
+			fill.a = 0.92 if hovered else 0.78
 		_draw_ring_slice(center, ITEM_INNER * scale_t, ITEM_OUTER * scale_t, start, stop, fill)
 		var mid := (start + stop) * 0.5
 		var pos := center + Vector2(cos(mid), sin(mid)) * ((ITEM_INNER + ITEM_OUTER) * 0.5 * scale_t)
@@ -419,8 +445,17 @@ func _item_index(angle: float, category_index: int, item_count: int, category_co
 	var cat_span := TAU / float(n)
 	var local := fposmod(angle - cat_start, TAU)
 	if local > cat_span:
-		local = 0.0
-	return clampi(int(local / cat_span * item_count), 0, item_count - 1)
+		return -1
+	# Match _draw_items pad so highlight hit-tests align with drawn wedges.
+	var pad := 0.08
+	var usable := cat_span * (1.0 - 2.0 * pad)
+	if usable <= 0.0:
+		return 0
+	var inner := local - cat_span * pad
+	if inner < 0.0 or inner > usable:
+		# In the padded gap: still pick nearest item, never a foreign category index.
+		inner = clampf(inner, 0.0, usable - 0.0001)
+	return clampi(int(inner / usable * item_count), 0, item_count - 1)
 
 
 func _visible_categories() -> Array:
