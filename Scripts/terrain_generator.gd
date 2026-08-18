@@ -14,7 +14,6 @@ const PLACEHOLDER_ATLAS := "res://Assets/sprites/terrain_tileset.png"
 
 const MIN_SPAWNER_TILES := 60
 const SPAWNER_SIDE_CLEAR := 2
-const GATE_CLEAR_TILES := 10
 const ACID_POOL_TILES := 12
 const ACID_DROP_TILES := 2
 
@@ -171,11 +170,11 @@ func _place_enemy_spawners(game: Node) -> void:
 		return
 
 	var spawn_x := int(width / 2.0)
-	_add_spawner(structures, _find_open_spawner_on_side(spawn_x, -1), -1)
-	_add_spawner(structures, _find_open_spawner_on_side(spawn_x, 1), 1)
+	_add_spawner(structures, _find_open_spawner_on_side(spawn_x, -1))
+	_add_spawner(structures, _find_open_spawner_on_side(spawn_x, 1))
 
 
-func _add_spawner(structures: Node2D, left_x: int, side: int) -> void:
+func _add_spawner(structures: Node2D, left_x: int) -> void:
 	var surface := _surface_y(left_x)
 	var width_tiles := PlaceholderSpawner.WIDTH_TILES
 	var left_center := map_to_local(Vector2i(left_x, surface))
@@ -184,22 +183,6 @@ func _add_spawner(structures: Node2D, left_x: int, side: int) -> void:
 	var spawner := preload("res://Scenes/enemy_spawner.tscn").instantiate()
 	structures.add_child(spawner)
 	spawner.global_position = to_global(foot)
-
-	var gate_left := left_x - GATE_CLEAR_TILES if side < 0 else left_x + width_tiles + GATE_CLEAR_TILES - 1
-	gate_left = clampi(gate_left, 2, width - 3)
-	var gate := _add_section_gate(structures, gate_left)
-	if spawner.has_method("bind_gate"):
-		spawner.bind_gate(gate)
-
-
-func _add_section_gate(structures: Node2D, left_x: int) -> Node2D:
-	var surface := _surface_y(left_x)
-	var center := map_to_local(Vector2i(left_x, surface))
-	var foot := Vector2(center.x, center.y - PlaceholderTileset.TILE_SIZE * 0.5)
-	var gate := preload("res://Scenes/section_gate.tscn").instantiate()
-	structures.add_child(gate)
-	gate.global_position = to_global(foot)
-	return gate
 
 
 func _find_open_spawner_on_side(spawn_x: int, side: int) -> int:
