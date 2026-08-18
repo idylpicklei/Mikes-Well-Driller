@@ -1,8 +1,8 @@
 class_name PlaceholderSpawner
 extends RefCounted
 
-const WIDTH_TILES := 2
-const HEIGHT_TILES := 2
+const WIDTH_TILES := 4
+const HEIGHT_TILES := 4
 const TILE := PlaceholderTileset.TILE_SIZE
 const SIZE := Vector2i(TILE * WIDTH_TILES, TILE * HEIGHT_TILES)
 const SPRITE_OFFSET := Vector2(0, -SIZE.y * 0.5)
