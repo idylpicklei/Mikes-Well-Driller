@@ -14,7 +14,7 @@ const HUB_ATTACK_COOLDOWN := 1.0
 const PLAYER_CHASE_RANGE := 100.0
 const PLAYER_DAMAGE := 10
 const PLAYER_ATTACK_COOLDOWN := 0.8
-const PLAYER_TOUCH_RANGE := 14.0
+const PLAYER_TOUCH_RANGE := 22.0
 
 var max_health := MAX_HEALTH
 var health := MAX_HEALTH
@@ -41,6 +41,17 @@ func _ready() -> void:
 		if max_health > 1:
 			# Tough enemies read slightly darker so 2-HP is noticeable without new art.
 			sprite.modulate = Color(0.82, 0.72, 0.72, 1.0)
+	_apply_footprint_collision()
+
+
+func _apply_footprint_collision() -> void:
+	var shape_node := get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if shape_node == null:
+		return
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(PlaceholderEnemy.SIZE)
+	shape_node.shape = rect
+	shape_node.position = PlaceholderEnemy.SPRITE_OFFSET
 
 
 func _physics_process(delta: float) -> void:

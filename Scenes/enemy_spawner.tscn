@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://Scripts/enemy_spawner.gd" id="1_spawner"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ship"]
-size = Vector2(32, 32)
+size = Vector2(64, 64)
 
 [node name="EnemySpawner" type="StaticBody2D"]
 z_index = 1
@@ -12,8 +12,8 @@ collision_mask = 1
 script = ExtResource("1_spawner")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
-position = Vector2(0, -16)
+position = Vector2(0, -32)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(0, -16)
+position = Vector2(0, -32)
 shape = SubResource("RectangleShape2D_ship")

@@ -1,7 +1,7 @@
 class_name PlaceholderEnemy
 extends RefCounted
 
-const SIZE := Vector2i(12, 16)
+const SIZE := Vector2i(24, 32)
 const SPRITE_OFFSET := Vector2(0, -SIZE.y * 0.5)
 const TEXTURE_PATH := "res://Assets/sprites/enemy.png"
 

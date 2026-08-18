@@ -23,6 +23,17 @@ func _ready() -> void:
 	if sprite:
 		sprite.texture = PlaceholderSpawner.create_texture()
 		sprite.position = PlaceholderSpawner.SPRITE_OFFSET
+	_apply_footprint_collision()
+
+
+func _apply_footprint_collision() -> void:
+	var shape_node := get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if shape_node == null:
+		return
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(PlaceholderSpawner.SIZE)
+	shape_node.shape = rect
+	shape_node.position = PlaceholderSpawner.SPRITE_OFFSET
 
 
 func take_damage(amount: int) -> void:
