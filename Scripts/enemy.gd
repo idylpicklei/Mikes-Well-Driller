@@ -65,11 +65,12 @@ func _physics_process(delta: float) -> void:
 	velocity.x = dir * SPEED
 
 	move_and_slide()
+	_reject_wall_ledges()
 	if _attack_player(delta) or _attack_defend_target(delta):
 		velocity.x = 0.0
 	else:
 		_hop_if_blocked(delta, dir)
-		_hop_if_stuck(delta)
+		_hop_if_stuck(delta, dir)
 	if global_position.y > 4000.0:
 		queue_free()
 
@@ -83,6 +84,10 @@ func take_damage(amount: int) -> void:
 
 
 func _hop_if_blocked(delta: float, dir: float) -> void:
+	# Placed walls are a hard stop — never vault them.
+	if _wall_blocks(dir):
+		_blocked_for = 0.0
+		return
 	if is_on_floor() and dir != 0.0 and _is_blocked(dir):
 		_blocked_for += delta
 		if _blocked_for >= BLOCKED_TIME:
@@ -92,7 +97,7 @@ func _hop_if_blocked(delta: float, dir: float) -> void:
 		_blocked_for = 0.0
 
 
-func _hop_if_stuck(delta: float) -> void:
+func _hop_if_stuck(delta: float, dir: float) -> void:
 	_stuck_jump_cd = maxf(_stuck_jump_cd - delta, 0.0)
 	if _last_x == INF:
 		_last_x = global_position.x
@@ -106,9 +111,66 @@ func _hop_if_stuck(delta: float) -> void:
 	_no_move_for += delta
 	if _no_move_for < STUCK_SECONDS or _stuck_jump_cd > 0.0:
 		return
+	# Stuck against a wall must not trigger the bigger vault jump.
+	if _wall_blocks(dir):
+		return
 
 	velocity.y = STUCK_JUMP_VELOCITY
 	_stuck_jump_cd = STUCK_JUMP_COOLDOWN
+
+
+func _wall_blocks(dir: float) -> bool:
+	if dir == 0.0:
+		return false
+	for i in get_slide_collision_count():
+		var col := get_slide_collision(i)
+		var other := col.get_collider()
+		if other is Node and (other as Node).is_in_group("wall"):
+			# Touching a wall on the travel side is always a hard stop.
+			if absf(col.get_normal().x) > 0.3 and signf(dir) == -signf(col.get_normal().x):
+				return true
+			if other is Node2D and signf((other as Node2D).global_position.x - global_position.x) == signf(dir):
+				return true
+
+	# Probe ahead within hop clearance so a short vault cannot clear a 16×32 wall.
+	var space := get_world_2d().direct_space_state
+	var probe := RectangleShape2D.new()
+	var body_h := float(PlaceholderEnemy.SIZE.y)
+	var body_w := float(PlaceholderEnemy.SIZE.x)
+	probe.size = Vector2(36.0, maxf(body_h - 4.0, 8.0))
+	var params := PhysicsShapeQueryParameters2D.new()
+	params.shape = probe
+	params.transform = Transform2D(
+		0.0,
+		global_position + Vector2(dir * (body_w * 0.5 + 20.0), -body_h * 0.5)
+	)
+	params.collision_mask = collision_mask
+	params.exclude = [get_rid()]
+	params.collide_with_areas = false
+	params.collide_with_bodies = true
+	for result in space.intersect_shape(params, 8):
+		var collider: Variant = result.get("collider")
+		if collider is Node and (collider as Node).is_in_group("wall"):
+			return true
+	return false
+
+
+## Walls are hard stops, not platforms — don't walk across their tops.
+func _reject_wall_ledges() -> void:
+	for i in get_slide_collision_count():
+		var col := get_slide_collision(i)
+		var other := col.get_collider()
+		if not (other is Node and (other as Node).is_in_group("wall")):
+			continue
+		if col.get_normal().y < -0.5:
+			velocity.y = maxf(velocity.y, 120.0)
+			# Nudge off the ledge toward the side we came from.
+			if other is Node2D:
+				var away := signf(global_position.x - (other as Node2D).global_position.x)
+				if away == 0.0:
+					away = -1.0
+				global_position.x += away * 2.0
+			return
 
 
 func _is_blocked(dir: float) -> bool:
