@@ -19,6 +19,9 @@ var _pending: Dictionary = {}
 var _valid := false
 ## Ignore the catalog LMB that armed us — never blocks cancel (RMB / B).
 var _wait_for_release := false
+## Extra frames after arming so menu-confirm never counts as a ground click.
+var _arm_grace_frames := 0
+var _rmb_held := false
 var _popup_boost := 0
 var _show_efficiency := false
 
@@ -64,6 +67,9 @@ func _start_placement(item_id: StringName, def: Dictionary) -> void:
 	_pending = def
 	is_placing = true
 	_wait_for_release = true
+	# Catalog LMB must never place — require release + a couple frames first.
+	_arm_grace_frames = 3
+	_rmb_held = Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
 	_apply_ghost(def)
 	_ghost.visible = true
 	z_index = 20
@@ -79,8 +85,12 @@ func _cancel_placement() -> void:
 	_pending_item = &""
 	_pending = {}
 	_wait_for_release = false
+	_arm_grace_frames = 0
+	_rmb_held = false
 	_ghost.visible = false
 	_show_efficiency = false
+	# Leaving place mode must return LMB to shoot for every placeable.
+	BuildMenu.block_shoot = false
 	global_position = Vector2.ZERO
 	z_index = 0
 	set_process(false)
@@ -124,13 +134,27 @@ func _process(_delta: float) -> void:
 	if not is_placing:
 		return
 	# Placement itself must not run while the B-catalog owns the pause freeze.
-	if BuildMenu.is_open or PauseMenu.is_open:
+	if BuildMenu.is_open:
+		return
+	# Esc-pause while armed: drop place mode so resume is never stuck in PLACE X.
+	if PauseMenu.is_open:
+		_cancel_placement()
 		return
 	_resolve_terrain()
 	if _terrain == null:
 		return
+	if _arm_grace_frames > 0:
+		_arm_grace_frames -= 1
 	if _wait_for_release and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 		_wait_for_release = false
+
+	# Poll RMB — web/context-menu paths can swallow the button event before _input.
+	var rmb := Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
+	if rmb and not _rmb_held:
+		_cancel_placement()
+		_rmb_held = rmb
+		return
+	_rmb_held = rmb
 
 	_refresh_ghost_at_mouse()
 
@@ -140,15 +164,24 @@ func _refresh_ghost_at_mouse() -> void:
 		return
 	var mouse := get_global_mouse_position()
 	global_position = _snap_position(mouse)
-	_valid = _is_valid_position(mouse)
+	# Validate at the snapped origin (same point place uses) so occupancy goes red immediately.
+	_valid = _is_valid_position(mouse) and _is_valid_origin(global_position)
 	_apply_ghost_tint()
 	_update_efficiency_popup()
 	if _ghost:
 		_ghost.visible = true
+	queue_redraw()
 
 
 func _apply_ghost_tint() -> void:
-	_ghost.modulate = Color(0.45, 1, 0.55, 0.65) if _valid else Color(1, 0.4, 0.4, 0.65)
+	if _ghost == null:
+		return
+	# Strong red when blocked (occupancy / no grass / can't afford) so refuse is never silent.
+	if _valid:
+		_ghost.modulate = Color(0.45, 1.0, 0.55, 0.7)
+	else:
+		_ghost.modulate = Color(1.0, 0.25, 0.25, 0.85)
+	_ghost.visible = is_placing
 
 
 func _mark_invalid_ghost() -> void:
@@ -159,28 +192,31 @@ func _mark_invalid_ghost() -> void:
 	queue_redraw()
 
 
-func _unhandled_input(event: InputEvent) -> void:
+## Use _input (not only _unhandled_input) so RMB/B cancel cannot be swallowed by GUI.
+func _input(event: InputEvent) -> void:
 	if not is_placing:
 		return
-	if BuildMenu.is_open or PauseMenu.is_open:
-		_cancel_placement()
+	if BuildMenu.is_open:
 		return
 
-	# Cancel always works — even before the arming LMB is released.
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
 		_cancel_placement()
 		get_viewport().set_input_as_handled()
 		return
-	if InputBindings.is_build_toggle_event(event) or event.is_action_pressed("pause"):
+	if InputBindings.is_build_toggle_event(event):
 		_cancel_placement()
 		get_viewport().set_input_as_handled()
 		return
+	# Esc is not a place-cancel key — PauseMenu opens and clears PLACE X there.
+	# Do not open the B-wheel from Esc.
 
-	if _wait_for_release:
+	if _wait_for_release or _arm_grace_frames > 0:
+		# Swallow the arming click / residual presses so catalog select never places.
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+			get_viewport().set_input_as_handled()
 		return
 
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		# Re-snap + re-validate at click time so ghost never lies green on a refused click.
 		_refresh_ghost_at_mouse()
 		if _valid:
 			_place_item()
@@ -251,6 +287,7 @@ func _place_item() -> void:
 		_cancel_placement()
 	else:
 		_wait_for_release = true
+		_arm_grace_frames = 1
 		_refresh_ghost_at_mouse()
 
 
@@ -471,6 +508,13 @@ func _update_efficiency_popup() -> void:
 
 
 func _draw() -> void:
+	# Occupancy / invalid: draw a clear red footprint so refuse is never silent.
+	if is_placing and not _valid and not _pending.is_empty():
+		var size := _pending_footprint_size()
+		var rect := Rect2(Vector2(-size.x * 0.5, -float(size.y)), Vector2(size))
+		draw_rect(rect, Color(1.0, 0.2, 0.2, 0.22))
+		draw_rect(rect, Color(1.0, 0.35, 0.3, 0.95), false, 2.0)
+
 	if not _show_efficiency or _font == null:
 		return
 

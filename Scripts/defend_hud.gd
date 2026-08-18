@@ -57,6 +57,9 @@ func _ready() -> void:
 		GameResources.water_changed.connect(_refresh_water)
 	_refresh_gpm()
 	set_process(true)
+	# Re-fit on resize so the strip stays edge-to-edge after viewport changes.
+	if not get_viewport().size_changed.is_connected(_fit_hud_bar):
+		get_viewport().size_changed.connect(_fit_hud_bar)
 	call_deferred("_connect_signals")
 	call_deferred("_fit_hud_bar")
 
@@ -132,17 +135,39 @@ func _process(_delta: float) -> void:
 			_hud_bar.visible = show_bar
 			if show_bar:
 				call_deferred("_fit_hud_bar")
+		elif show_bar:
+			# Re-assert full width every frame — layout changes must not shrink to a box.
+			if not is_equal_approx(_hud_bar.anchor_left, 0.0) or not is_equal_approx(_hud_bar.anchor_right, 1.0) \
+					or not is_equal_approx(_hud_bar.offset_left, 0.0) or not is_equal_approx(_hud_bar.offset_right, 0.0):
+				_fit_hud_bar()
 
 
-## Full-width strip: size to content, hard-capped, no empty brown padding.
+## Full-width strip flush to both screen edges. Height only — never reset_size()
+## (that shrinks PanelContainer to content width and leaves bare canvas on the right).
 func _fit_hud_bar() -> void:
 	if _hud_bar == null:
 		return
-	_hud_bar.reset_size()
-	var h := ceili(_hud_bar.get_combined_minimum_size().y)
-	h = clampi(h, 1, HUD_STRIP_MAX_H)
+	_hud_bar.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	_hud_bar.anchor_left = 0.0
+	_hud_bar.anchor_right = 1.0
+	_hud_bar.anchor_top = 1.0
+	_hud_bar.anchor_bottom = 1.0
+	_hud_bar.offset_left = 0.0
+	_hud_bar.offset_right = 0.0
+	_hud_bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	# Min height from content; keep the strip thin so walkable ground stays visible above.
+	var content_h := 0
+	var vbox := _hud_bar.get_node_or_null("VBox") as Control
+	if vbox:
+		content_h = ceili(vbox.get_combined_minimum_size().y)
+	var style := _hud_bar.get_theme_stylebox("panel") if _hud_bar is PanelContainer else null
+	var pad := 0
+	if style:
+		pad = ceili(style.get_margin(SIDE_TOP) + style.get_margin(SIDE_BOTTOM))
+	var h := clampi(content_h + pad, 40, HUD_STRIP_MAX_H)
 	_hud_bar.offset_top = -float(h)
 	_hud_bar.offset_bottom = 0.0
+	_hud_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
 func _connect_signals() -> void:

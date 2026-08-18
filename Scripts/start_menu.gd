@@ -3,6 +3,9 @@ extends Control
 const FONT_PATH := "res://Assets/fonts/PixelOperator8-Bold.ttf"
 const GAME_SCENE := "res://Scenes/game.tscn"
 const VERSION_PATH := "res://version.txt"
+## Artist drop-in: pixelated dusk ref for the start menu (not the playfield).
+## Binary-replace Assets/sprites/start_bg.png — no code change needed.
+const START_BG_PATH := "res://Assets/sprites/start_bg.png"
 
 enum View { MAIN, SETTINGS }
 
@@ -11,19 +14,43 @@ enum View { MAIN, SETTINGS }
 @onready var _bind_rows: VBoxContainer = %BindRows
 @onready var _remap_hint: Label = %RemapHint
 @onready var _build_stamp: Label = %BuildStamp
+@onready var _background: ColorRect = $Background
 
 var _view := View.MAIN
 var _remapping_action: StringName = &""
 var _bind_buttons: Dictionary = {}
 var _font: Font
+var _bg_art: TextureRect
 
 
 func _ready() -> void:
 	_font = load(FONT_PATH)
 	_apply_fonts()
+	_apply_start_background()
 	_build_stamp.text = _read_build_stamp()
 	_build_bind_rows()
 	_show_view(View.MAIN)
+
+
+## Keep the flat navy ColorRect until start_bg.png lands; then full-bleed art.
+func _apply_start_background() -> void:
+	if not ResourceLoader.exists(START_BG_PATH):
+		return
+	var tex := load(START_BG_PATH) as Texture2D
+	if tex == null:
+		return
+	if _background:
+		_background.visible = false
+	_bg_art = TextureRect.new()
+	_bg_art.name = "StartBgArt"
+	_bg_art.texture = tex
+	_bg_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_bg_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_bg_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_bg_art.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_bg_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_bg_art)
+	move_child(_bg_art, 0)
 
 
 func _read_build_stamp() -> String:

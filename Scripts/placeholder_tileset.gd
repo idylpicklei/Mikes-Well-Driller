@@ -64,9 +64,16 @@ static func is_grass(coords: Vector2i) -> bool:
 
 
 ## Deterministic blend across rows 0–2 from world position + seed.
+## Uses coarse cell blocks so variants form patches (reads as blend, not wallpaper).
 static func variant_coords(column: int, cell_x: int, cell_y: int, world_seed: int) -> Vector2i:
-	var h := int(hash(Vector3i(cell_x, cell_y, world_seed ^ (column * 131))))
+	var block_x := int(floor(float(cell_x) / 3.0))
+	var block_y := int(floor(float(cell_y) / 2.0))
+	var h := int(hash(Vector3i(block_x, block_y, world_seed ^ (column * 131))))
 	var row := absi(h) % VARIANT_ROWS
+	# Neighbor jitter: occasional flip to an adjacent row so seams soften.
+	var jitter := int(hash(Vector3i(cell_x, cell_y, world_seed + 17)))
+	if absi(jitter) % 5 == 0:
+		row = (row + 1) % VARIANT_ROWS
 	return Vector2i(column, row)
 
 

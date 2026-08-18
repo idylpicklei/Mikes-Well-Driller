@@ -18,11 +18,14 @@ const PLACEHOLDER_ATLAS := "res://Assets/sprites/terrain_tileset.png"
 const MIN_SPAWNER_TILES := 100
 const SPAWNER_SIDE_CLEAR := 2
 ## Beach (dry|wet|scum|shallow-blend) then acid ocean past the map edge.
+## Ocean is long enough to continue past the camera limit (no navy void at the edge).
 const BEACH_TILES := 4
-const OCEAN_TILES := 14
+const OCEAN_TILES := 28
 const OCEAN_DEPTH_TILES := 6
-## Extra camera pad past the ocean so the shore is not clipped at the limit.
+## Extra camera pad into the ocean — camera stops before the far water edge.
 const CAMERA_SHORE_PAD_TILES := 4
+## Ocean continues this many tiles past what the camera can reach.
+const OCEAN_OFFSCREEN_TAIL_TILES := 8
 const SHORE_MARGIN_TILES := BEACH_TILES + OCEAN_TILES
 ## Flat approach onto each shore so the last grass column meets beach at the same Y.
 const EDGE_FLATTEN_TILES := 8
@@ -107,13 +110,17 @@ func _atlas_at(x: int, y: int, surface: int) -> Vector2i:
 	else:
 		var depth := y - surface
 		var speck := _fill_noise.get_noise_2d(x, y)
-		if depth <= dirt_depth:
-			column = PlaceholderTileset.DIRT_DARK.x if speck > 0.2 else PlaceholderTileset.DIRT.x
+		# Soft grass→dirt blend in the top dirt band (not a hard wallpaper stamp).
+		if depth == 1:
+			# Near-surface: mix dirt shades so the cut under grass reads blended.
+			column = PlaceholderTileset.DIRT.x if speck > -0.05 else PlaceholderTileset.DIRT_DARK.x
+		elif depth <= dirt_depth:
+			column = PlaceholderTileset.DIRT_DARK.x if speck > 0.15 else PlaceholderTileset.DIRT.x
 		elif speck > 0.25:
 			column = PlaceholderTileset.STONE_DARK.x
 		else:
 			column = PlaceholderTileset.STONE.x
-	# Blend atlas rows 0–2 by world seed so plateaus are not a stamped grid.
+	# Coherent variant patches across rows 0–2 (not per-tile salt-and-pepper).
 	return PlaceholderTileset.variant_coords(column, x, y, _height_noise.seed)
 
 
@@ -152,7 +159,10 @@ func _setup_world() -> void:
 		var camera := player.get_node_or_null("Camera2D") as Camera2D
 		if camera:
 			var tile := PlaceholderTileset.TILE_SIZE
-			var cam_pad := (SHORE_MARGIN_TILES + CAMERA_SHORE_PAD_TILES) * tile
+			# Camera reaches into the ocean but stops before the far water edge,
+			# so acid continues off-screen (no navy void at the limit).
+			var visible_ocean := maxi(OCEAN_TILES - OCEAN_OFFSCREEN_TAIL_TILES, BEACH_TILES + 4)
+			var cam_pad := (BEACH_TILES + visible_ocean + CAMERA_SHORE_PAD_TILES) * tile
 			camera.limit_enabled = true
 			camera.limit_left = -cam_pad
 			camera.limit_right = width * tile + cam_pad
@@ -190,7 +200,6 @@ func _add_shore(edge_cell_x: int, outward: float) -> void:
 	var tile := float(PlaceholderTileset.TILE_SIZE)
 	var beach_w := float(BEACH_TILES) * tile
 	var ocean_w := float(OCEAN_TILES) * tile
-	var ocean_h := float(OCEAN_DEPTH_TILES) * tile
 	var overlap := float(SHORE_OVERLAP_TILES) * tile
 	# Align to TileMapLayer local space (tile centers), not raw cell*size.
 	var edge_cell := clampi(edge_cell_x, 0, width - 1)
@@ -199,6 +208,9 @@ func _add_shore(edge_cell_x: int, outward: float) -> void:
 	# Outer face of the edge tile (left: x=0, right: x=width*tile).
 	var edge_px := 0.0 if outward < 0.0 else float(width) * tile
 	var surface_top := edge_center.y - tile * 0.5
+
+	# Fill under beach + near-ocean columns so the cross-section is solid to bedrock.
+	_fill_under_shore(edge_cell_x, outward, surface)
 
 	# Parent under this TileMapLayer so shore coords share terrain space (no Game transform drift).
 	var beach := preload("res://Scenes/beach_strip.tscn").instantiate()
@@ -213,10 +225,37 @@ func _add_shore(edge_cell_x: int, outward: float) -> void:
 	var ocean := preload("res://Scenes/acid_pool.tscn").instantiate()
 	add_child(ocean)
 	ocean.z_index = 0
-	ocean.position = Vector2(ocean_center_x, surface_top + ocean_h * 0.5)
+	# Visual depth reaches bedrock so there is no empty void under the water body.
+	var fill_depth_tiles := maxi(bedrock_y - surface, OCEAN_DEPTH_TILES)
+	var fill_h := float(fill_depth_tiles) * tile
+	ocean.position = Vector2(ocean_center_x, surface_top + fill_h * 0.5)
 	if ocean.has_method("setup"):
 		# inland is opposite of outward: tuck floor under the scum tile.
-		ocean.setup(Vector2(ocean_w, ocean_h), overlap, -outward)
+		ocean.setup(Vector2(ocean_w, fill_h), overlap, -outward)
+
+
+## Solid cross-section under beach (and a lip of ocean) down to bedrock.
+## Uses terrain dirt/stone/bedrock — rectangular caves elsewhere stay caves.
+func _fill_under_shore(_edge_cell_x: int, outward: float, surface: int) -> void:
+	var dir := -1 if outward < 0.0 else 1
+	# Beach columns + a short ocean lip get TileMap fill under the walk strip.
+	var fill_cols := BEACH_TILES + 3
+	for i in fill_cols:
+		var x := (-1 - i) if dir < 0 else (width + i)
+		for y in range(surface, bedrock_y + 1):
+			if get_cell_source_id(Vector2i(x, y)) != -1:
+				continue
+			var depth := y - surface
+			var column: int
+			if y == bedrock_y:
+				column = PlaceholderTileset.BEDROCK.x
+			elif depth <= dirt_depth:
+				column = PlaceholderTileset.DIRT_DARK.x if ((x + y) % 3) == 0 else PlaceholderTileset.DIRT.x
+			elif depth <= dirt_depth + 6:
+				column = PlaceholderTileset.STONE.x
+			else:
+				column = PlaceholderTileset.STONE_DARK.x if ((x + y) % 2) == 0 else PlaceholderTileset.STONE.x
+			set_cell(Vector2i(x, y), 0, PlaceholderTileset.variant_coords(column, x, y, _height_noise.seed))
 
 
 func _place_enemy_spawners(game: Node) -> void:

@@ -147,14 +147,14 @@ func _build_ocean_visual(size_px: Vector2, inland_dir: float, tile: float) -> vo
 			sprite.texture = tex
 			sprite.hframes = atlas_cols
 			sprite.vframes = atlas_rows
-			# Surface row 0 on the waterline; fill row 1 stacked underneath.
+			# Surface row 0 on the waterline; fill row 1 stacked underneath (solid cross-section).
 			var atlas_row := 0 if row == 0 else 1
 			# Columns deepen outward: shallow → mid → deep → abyss.
 			var atlas_col := clampi(from_inland, 0, atlas_cols - 1)
 			sprite.frame = atlas_row * atlas_cols + atlas_col
 			sprite.centered = true
 			var depth_nudge := 0.0
-			if from_inland < FLOOR_RAMP_TILES:
+			if row == 0 and from_inland < FLOOR_RAMP_TILES:
 				var t := float(from_inland) / float(maxi(FLOOR_RAMP_TILES - 1, 1))
 				depth_nudge = lerpf(FLOOR_START_DEPTH_PX, FLOOR_DEEP_DEPTH_PX, t) * 0.25
 			sprite.position = origin + Vector2((col + 0.5) * tile, (row + 0.5) * tile + depth_nudge)

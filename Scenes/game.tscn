@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://datr1s5cwlqma"]
+[gd_scene load_steps=12 format=3 uid="uid://datr1s5cwlqma"]
 
 [ext_resource type="PackedScene" uid="uid://chn4gyaisr31t" path="res://Scenes/player.tscn" id="1_7u14b"]
 [ext_resource type="Script" path="res://Scripts/terrain_generator.gd" id="2_terrain"]
@@ -8,11 +8,21 @@
 [ext_resource type="Script" path="res://Scripts/build_placer.gd" id="6_placer"]
 [ext_resource type="PackedScene" uid="uid://cdefendhud00001" path="res://Scenes/defend_hud.tscn" id="7_hud"]
 [ext_resource type="Script" path="res://Scripts/dusk_clouds.gd" id="8_clouds"]
+[ext_resource type="Script" path="res://Scripts/dusk_sky.gd" id="9_sky"]
+[ext_resource type="Script" path="res://Scripts/dusk_hills.gd" id="10_hills"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_killzone"]
 size = Vector2(8000, 80)
 
 [node name="Game" type="Node2D"]
+
+[node name="DuskSky" type="Node2D" parent="."]
+z_index = -120
+script = ExtResource("9_sky")
+
+[node name="DuskHills" type="Node2D" parent="."]
+z_index = -100
+script = ExtResource("10_hills")
 
 [node name="DuskClouds" type="Node2D" parent="."]
 z_index = -80
