@@ -168,8 +168,6 @@ func _refresh_ghost_at_mouse() -> void:
 	_valid = _is_valid_position(mouse) and _is_valid_origin(global_position)
 	_apply_ghost_tint()
 	_update_efficiency_popup()
-	if _ghost:
-		_ghost.visible = true
 	queue_redraw()
 
 
@@ -179,16 +177,23 @@ func _apply_ghost_tint() -> void:
 	# Strong red when blocked (occupancy / no grass / can't afford) so refuse is never silent.
 	if _valid:
 		_ghost.modulate = Color(0.45, 1.0, 0.55, 0.7)
+		_ghost.visible = is_placing
 	else:
 		_ghost.modulate = Color(1.0, 0.25, 0.25, 0.85)
-	_ghost.visible = is_placing
+		# Over an already-placed building: keep the real sprite visible.
+		# Red footprint from _draw still shows invalid occupancy; ghost stays on empty ground.
+		_ghost.visible = is_placing and not _blocked_by_existing_building()
+
+
+func _blocked_by_existing_building() -> bool:
+	if _pending.is_empty():
+		return false
+	return _overlaps_any_structure(global_position, _pending_footprint_size())
 
 
 func _mark_invalid_ghost() -> void:
 	_valid = false
 	_apply_ghost_tint()
-	if _ghost:
-		_ghost.visible = true
 	queue_redraw()
 
 
