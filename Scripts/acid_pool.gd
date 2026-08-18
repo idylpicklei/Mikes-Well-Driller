@@ -47,8 +47,22 @@ func setup(size_px: Vector2) -> void:
 
 func _build_ocean_visual(size_px: Vector2) -> void:
 	for child in get_children():
-		if child is Sprite2D:
+		if child is Sprite2D or child is Polygon2D or child.name == "AcidUnderlay":
 			child.queue_free()
+
+	# Solid toxic underlay so the shore never reads as empty navy clear-color void.
+	var underlay := Polygon2D.new()
+	underlay.name = "AcidUnderlay"
+	var half := size_px * 0.5
+	underlay.polygon = PackedVector2Array([
+		Vector2(-half.x, -half.y),
+		Vector2(half.x, -half.y),
+		Vector2(half.x, half.y),
+		Vector2(-half.x, half.y),
+	])
+	underlay.color = Color(0.28, 0.78, 0.18, 0.92)
+	underlay.z_index = -1
+	add_child(underlay)
 
 	var tex := PlaceholderAcidOcean.create_texture()
 	var tile := float(PlaceholderTileset.TILE_SIZE)
@@ -63,7 +77,8 @@ func _build_ocean_visual(size_px: Vector2) -> void:
 			sprite.frame = col % PlaceholderAcidOcean.TILE_COUNT
 			sprite.centered = true
 			sprite.position = origin + Vector2((col + 0.5) * tile, (row + 0.5) * tile)
-			sprite.z_index = -1
+			sprite.z_index = 0
+			sprite.modulate = Color(1.15, 1.35, 1.05, 1.0)
 			add_child(sprite)
 
 

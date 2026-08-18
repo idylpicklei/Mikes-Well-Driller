@@ -17,8 +17,10 @@ const MIN_SPAWNER_TILES := 100
 const SPAWNER_SIDE_CLEAR := 2
 ## Beach (dry|wet|scum) then acid ocean past the map edge.
 const BEACH_TILES := 3
-const OCEAN_TILES := 12
-const OCEAN_DEPTH_TILES := 4
+const OCEAN_TILES := 14
+const OCEAN_DEPTH_TILES := 6
+## Extra camera pad past the ocean so the shore is not clipped at the limit.
+const CAMERA_SHORE_PAD_TILES := 4
 const SHORE_MARGIN_TILES := BEACH_TILES + OCEAN_TILES
 
 var spawn_position := Vector2.ZERO
@@ -134,8 +136,10 @@ func _setup_world() -> void:
 		var camera := player.get_node_or_null("Camera2D") as Camera2D
 		if camera:
 			var tile := PlaceholderTileset.TILE_SIZE
-			camera.limit_left = -SHORE_MARGIN_TILES * tile
-			camera.limit_right = (width + SHORE_MARGIN_TILES) * tile
+			var cam_pad := (SHORE_MARGIN_TILES + CAMERA_SHORE_PAD_TILES) * tile
+			camera.limit_enabled = true
+			camera.limit_left = -cam_pad
+			camera.limit_right = width * tile + cam_pad
 			camera.limit_top = -320
 			camera.limit_bottom = (bedrock_y + 4) * tile
 			camera.reset_smoothing()
@@ -157,29 +161,37 @@ func _setup_world() -> void:
 
 func _place_shores(game: Node) -> void:
 	# Left edge: land ends at x=0 → beach outward → acid ocean.
-	_add_shore(game, 0.0, _surface_y(0), -1.0)
-	# Right edge: land ends at width*tile → beach outward → acid ocean.
-	_add_shore(game, width * float(PlaceholderTileset.TILE_SIZE), _surface_y(width - 1), 1.0)
+	_add_shore(game, 0, -1.0)
+	# Right edge: land ends at width → beach outward → acid ocean.
+	_add_shore(game, width, 1.0)
 
 
-func _add_shore(game: Node, edge_px: float, surface_cell_y: int, outward: float) -> void:
+func _add_shore(game: Node, edge_cell_x: int, outward: float) -> void:
 	var tile := float(PlaceholderTileset.TILE_SIZE)
 	var beach_w := float(BEACH_TILES) * tile
 	var ocean_w := float(OCEAN_TILES) * tile
-	var surface_px := float(surface_cell_y) * tile
+	var ocean_h := float(OCEAN_DEPTH_TILES) * tile
+	# Align to TileMapLayer local space (tile centers), not raw cell*size.
+	var edge_cell := clampi(edge_cell_x, 0, width - 1)
+	var surface := _surface_y(edge_cell)
+	var edge_center := map_to_local(Vector2i(edge_cell, surface))
+	# Outer face of the edge tile (left: x=0, right: x=width*tile).
+	var edge_px := 0.0 if outward < 0.0 else float(width) * tile
+	var surface_top := edge_center.y - tile * 0.5
 
 	var beach := preload("res://Scenes/beach_strip.tscn").instantiate()
 	game.add_child(beach)
+	beach.z_index = 0
 	# Beach sits on the grass surface, extending outward from the map edge.
-	beach.position = Vector2(edge_px, surface_px)
+	beach.position = Vector2(edge_px, surface_top)
 	if beach.has_method("setup"):
 		beach.setup(outward)
 
-	var ocean_h := float(OCEAN_DEPTH_TILES) * tile
 	var ocean_center_x := edge_px + outward * (beach_w + ocean_w * 0.5)
 	var ocean := preload("res://Scenes/acid_pool.tscn").instantiate()
 	game.add_child(ocean)
-	ocean.position = Vector2(ocean_center_x, surface_px + ocean_h * 0.5)
+	ocean.z_index = 0
+	ocean.position = Vector2(ocean_center_x, surface_top + ocean_h * 0.5)
 	if ocean.has_method("setup"):
 		ocean.setup(Vector2(ocean_w, ocean_h))
 

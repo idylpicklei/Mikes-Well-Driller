@@ -148,6 +148,8 @@ func _place_item() -> void:
 	_structures.add_child(node)
 	if _pending_item == &"main_hub":
 		hub_placed.emit(node)
+	elif _pending_item == &"turret":
+		_orient_new_turret(node, place_origin)
 	elif _pending_item == &"basic_drill":
 		var well := _find_attachable_well(place_origin)
 		if well == null or not node.has_method("attach_to_well") or not node.attach_to_well(well):
@@ -160,6 +162,18 @@ func _place_item() -> void:
 	BuildMenu.block_shoot = true
 	global_position = Vector2.ZERO
 	_cancel_placement()
+
+
+func _orient_new_turret(turret: Node, place_origin: Vector2) -> void:
+	if turret == null:
+		return
+	var hub := get_tree().get_first_node_in_group("main_hub") as Node2D
+	if hub and turret.has_method("set_idle_facing_from_hub"):
+		turret.set_idle_facing_from_hub(hub)
+	elif turret.has_method("set_idle_facing_from_placer"):
+		var player := get_tree().get_first_node_in_group("player") as Node2D
+		var from := player.global_position if player else place_origin
+		turret.set_idle_facing_from_placer(from)
 
 
 func _is_at_cap(def: Dictionary) -> bool:

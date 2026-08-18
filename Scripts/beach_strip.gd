@@ -27,5 +27,5 @@ func setup(outward: float) -> void:
 		sprite.centered = true
 		var along := (i + 0.5) * tile
 		sprite.position = Vector2(outward * along, tile * 0.5)
-		sprite.z_index = -1
+		sprite.z_index = 0
 		add_child(sprite)
