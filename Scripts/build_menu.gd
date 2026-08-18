@@ -265,6 +265,9 @@ func _draw() -> void:
 	elif _hovered_category >= 0 and _hovered_category < cats.size():
 		hub_title = _label_of(cats[_hovered_category])
 		hub_sub = "Choose an item"
+	elif selected_item != &"":
+		hub_title = hub_title_for(selected_item)
+		hub_sub = "Armed"
 	elif selected_category != &"":
 		hub_title = _label_for(selected_category)
 		hub_sub = "Selected"
