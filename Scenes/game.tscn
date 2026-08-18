@@ -25,7 +25,7 @@ script = ExtResource("6_placer")
 position = Vector2(64, 0)
 
 [node name="Camera2D" type="Camera2D" parent="Player"]
-position = Vector2(2, -20)
+position = Vector2(2, -44)
 zoom = Vector2(2, 2)
 position_smoothing_enabled = true
 

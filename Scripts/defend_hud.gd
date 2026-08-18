@@ -3,9 +3,18 @@ extends Control
 const START_MENU_SCENE := "res://Scenes/start_menu.tscn"
 const FONT_PATH := "res://Assets/fonts/PixelOperator8-Bold.ttf"
 
+const COL_TEXT := Color(0.86, 0.78, 0.68, 1.0)
+const COL_MUTED := Color(0.62, 0.55, 0.48, 1.0)
+const COL_TEAL := Color(0.55, 0.78, 0.76, 1.0)
+const COL_RUST := Color(0.86, 0.55, 0.38, 1.0)
+const COL_POISON := Color(0.55, 0.78, 0.42, 1.0)
+
 @onready var _status: Label = %StatusLabel
 @onready var _mike_health: Label = %MikeHealthLabel
+@onready var _mike_bar: ProgressBar = %MikeHealthBar
 @onready var _health: Label = %HealthLabel
+@onready var _tank_row: Control = %TankRow
+@onready var _tank_bar: ProgressBar = %TankHealthBar
 @onready var _crew: Label = %CrewLabel
 @onready var _water_bar: ProgressBar = %WaterBar
 @onready var _water_label: Label = %WaterLabel
@@ -15,15 +24,19 @@ const FONT_PATH := "res://Assets/fonts/PixelOperator8-Bold.ttf"
 
 var _hub: Node = null
 var _font: Font
+var _tank_fill_clean: StyleBoxFlat
+var _tank_fill_poison: StyleBoxFlat
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_font = load(FONT_PATH)
 	_game_over.add_to_group("game_over")
-	_apply_hud_colors()
+	_cache_tank_styles()
+	_apply_hud_look()
 	_apply_game_over_fonts()
 	_game_over.visible = false
+	_tank_row.visible = false
 	_set_idle_status()
 	_refresh_water(GameResources.water, GameResources.water_max)
 	if not GameResources.water_changed.is_connected(_refresh_water):
@@ -33,25 +46,38 @@ func _ready() -> void:
 	call_deferred("_connect_signals")
 
 
-func _apply_hud_colors() -> void:
-	var text := Color(0.72, 0.76, 0.8)
-	var soft := Color(0.58, 0.62, 0.68)
+func _cache_tank_styles() -> void:
+	var existing := _tank_bar.get_theme_stylebox("fill")
+	if existing is StyleBoxFlat:
+		_tank_fill_clean = (existing as StyleBoxFlat).duplicate() as StyleBoxFlat
+	else:
+		_tank_fill_clean = StyleBoxFlat.new()
+		_tank_fill_clean.bg_color = Color(0.32, 0.55, 0.5, 1)
+	_tank_fill_poison = _tank_fill_clean.duplicate() as StyleBoxFlat
+	_tank_fill_poison.bg_color = Color(0.42, 0.62, 0.28, 1)
+
+
+func _apply_hud_look() -> void:
 	for node in find_children("*", "Label", true, false):
 		var label := node as Label
 		if _game_over.is_ancestor_of(label):
 			continue
-		label.add_theme_color_override("font_color", text)
-	_status.add_theme_color_override("font_color", soft)
+		if _font:
+			label.add_theme_font_override("font", _font)
+		label.add_theme_color_override("font_color", COL_TEXT)
+	_status.add_theme_color_override("font_color", COL_MUTED)
+	_gpm_label.add_theme_color_override("font_color", COL_TEAL)
+	_water_label.add_theme_color_override("font_color", COL_TEAL)
+	_mike_health.add_theme_color_override("font_color", COL_RUST)
 
 
 func _apply_game_over_fonts() -> void:
 	if _font == null:
 		return
-	var text := Color(0.78, 0.8, 0.84)
 	for node in _game_over.find_children("*", "Label", true, false):
 		var label := node as Label
 		label.add_theme_font_override("font", _font)
-		label.add_theme_color_override("font_color", text)
+		label.add_theme_color_override("font_color", COL_TEXT)
 	_menu_button.add_theme_font_override("font", _font)
 
 
@@ -152,6 +178,7 @@ func _bind_hub(hub: Node) -> void:
 			_hub.tank_poisoned.disconnect(_on_tank_poisoned)
 
 	_hub = hub
+	_tank_row.visible = true
 	if "health" in _hub and "MAX_HEALTH" in _hub:
 		_on_hub_health_changed(int(_hub.health), int(_hub.MAX_HEALTH))
 	if _hub.has_signal("health_changed"):
@@ -163,22 +190,34 @@ func _bind_hub(hub: Node) -> void:
 
 
 func _on_mike_health_changed(current: int, maximum: int) -> void:
-	_mike_health.text = "Mike HP: %d / %d" % [current, maximum]
+	_mike_bar.max_value = maximum
+	_mike_bar.value = current
+	_mike_health.text = "%d / %d" % [current, maximum]
 
 
 func _on_mike_died() -> void:
-	_mike_health.text = "Mike down!"
+	_mike_health.text = "DOWN"
+	_mike_bar.value = 0
 	_status.text = "Fat Mike was killed."
 	_set_game_over_subtitle("Fat Mike was killed.")
 	_show_game_over()
 
 
 func _on_hub_health_changed(current: int, maximum: int) -> void:
+	_tank_row.visible = true
+	_tank_bar.max_value = maximum
+	_tank_bar.value = current
 	var poisoned := _hub != null and "is_tank_poisoned" in _hub and bool(_hub.is_tank_poisoned)
 	if poisoned or current <= 0:
-		_health.text = "Tank: Poisoned · HP %d / %d" % [current, maximum]
+		_health.text = "Poisoned · %d / %d" % [current, maximum]
+		_health.add_theme_color_override("font_color", COL_POISON)
+		if _tank_fill_poison:
+			_tank_bar.add_theme_stylebox_override("fill", _tank_fill_poison)
 	else:
-		_health.text = "Tank: Clean · HP %d / %d" % [current, maximum]
+		_health.text = "Clean · %d / %d" % [current, maximum]
+		_health.add_theme_color_override("font_color", COL_TEAL)
+		if _tank_fill_clean:
+			_tank_bar.add_theme_stylebox_override("fill", _tank_fill_clean)
 
 
 func _on_tank_poisoned() -> void:
@@ -186,7 +225,8 @@ func _on_tank_poisoned() -> void:
 	if _hub and "health" in _hub and "MAX_HEALTH" in _hub:
 		_on_hub_health_changed(int(_hub.health), int(_hub.MAX_HEALTH))
 	else:
-		_health.text = "Tank: Poisoned"
+		_health.text = "Poisoned"
+		_health.add_theme_color_override("font_color", COL_POISON)
 	_status.text = "Tank poisoned — Mike is dying of thirst! (stored water is undrinkable)"
 
 
