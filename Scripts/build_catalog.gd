@@ -85,7 +85,7 @@ static func placeable(item_id: StringName) -> Dictionary:
 		&"turret":
 			return {
 				"scene": preload("res://Scenes/turret.tscn"),
-				"cost_gold": 8,
+				"cost_water": 15,
 				"width": PlaceholderTurret.WIDTH_TILES,
 				"height": PlaceholderTurret.HEIGHT_TILES,
 				"sprite_offset": PlaceholderTurret.SPRITE_OFFSET,

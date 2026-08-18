@@ -63,8 +63,6 @@ func take_damage(amount: int) -> void:
 		return
 	health = maxi(health - amount, 0)
 	if health <= 0:
-		# Payout matches max HP: 1-HP blobs pay 1, tough 2-HP blobs pay 2.
-		GameResources.add_gold(max_health)
 		queue_free()
 
 

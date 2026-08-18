@@ -136,15 +136,8 @@ func _place_item() -> void:
 		_cancel_placement()
 		return
 
-	var water_cost := int(_pending.get("cost_water", 0))
-	var gold_cost := int(_pending.get("cost_gold", 0))
-	if water_cost > 0 and not GameResources.spend_water(water_cost):
-		_valid = false
-		_ghost.modulate = Color(1, 0.4, 0.4, 0.65)
-		return
-	if gold_cost > 0 and not GameResources.spend_gold(gold_cost):
-		if water_cost > 0:
-			GameResources.add_water(water_cost)
+	var cost := int(_pending.get("cost_water", 0))
+	if cost > 0 and not GameResources.spend_water(cost):
 		_valid = false
 		_ghost.modulate = Color(1, 0.4, 0.4, 0.65)
 		return
@@ -159,10 +152,8 @@ func _place_item() -> void:
 		var well := _find_attachable_well(place_origin)
 		if well == null or not node.has_method("attach_to_well") or not node.attach_to_well(well):
 			node.queue_free()
-			if water_cost > 0:
-				GameResources.add_water(water_cost)
-			if gold_cost > 0:
-				GameResources.add_gold(gold_cost)
+			if cost > 0:
+				GameResources.add_water(cost)
 			_valid = false
 			_ghost.modulate = Color(1, 0.4, 0.4, 0.65)
 			return
@@ -227,13 +218,8 @@ func _surface_grass_at(cell: Vector2i) -> Vector2i:
 
 
 func _can_afford(def: Dictionary) -> bool:
-	var water_cost := int(def.get("cost_water", 0))
-	if water_cost > 0 and GameResources.water < water_cost:
-		return false
-	var gold_cost := int(def.get("cost_gold", 0))
-	if gold_cost > 0 and GameResources.gold < gold_cost:
-		return false
-	return true
+	var cost := int(def.get("cost_water", 0))
+	return cost <= 0 or GameResources.water >= cost
 
 
 func _is_valid_position(world_pos: Vector2) -> bool:
