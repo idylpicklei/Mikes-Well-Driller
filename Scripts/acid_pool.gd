@@ -1,29 +1,101 @@
 extends Area2D
 
+## Acid ocean past the beach. Overlap ticks 5 HP/s on Mike and hires; leave to stop.
+
+const DPS := PlaceholderAcidOcean.DAMAGE_PER_SECOND
+## Character bodies sit above their feet — extend the hurt box above the waterline.
+const HURT_ABOVE := 36.0
+
+var _accum: Dictionary = {}  # instance_id -> float damage accumulator
+
 
 func _ready() -> void:
 	add_to_group("acid")
 	collision_layer = 0
 	collision_mask = 1
+	monitoring = true
 	monitorable = false
 	if not body_entered.is_connected(_on_body_entered):
 		body_entered.connect(_on_body_entered)
+	if not body_exited.is_connected(_on_body_exited):
+		body_exited.connect(_on_body_exited)
 
 
 func setup(size_px: Vector2) -> void:
-	var sprite := get_node_or_null("Sprite2D") as Sprite2D
-	if sprite:
-		sprite.centered = true
-		sprite.texture = PlaceholderAcid.create_texture(Vector2i(maxi(int(size_px.x), 2), maxi(int(size_px.y), 2)))
+	_build_ocean_visual(size_px)
+	var tile := float(PlaceholderTileset.TILE_SIZE)
+	# Damage volume covers the water body plus a band above the surface for standing chars.
+	var hurt_h := size_px.y + HURT_ABOVE
 	var shape_node := get_node_or_null("CollisionShape2D") as CollisionShape2D
 	if shape_node:
 		var rect := RectangleShape2D.new()
-		rect.size = size_px
+		rect.size = Vector2(size_px.x, hurt_h)
 		shape_node.shape = rect
+		# Node origin is visual center; shift hurt box up so it clears the waterline.
+		shape_node.position = Vector2(0.0, -HURT_ABOVE * 0.5)
+	# Shallow toxic footing so Mike can walk in and leave (DOT, not a pit).
+	var floor_body := get_node_or_null("Floor") as StaticBody2D
+	if floor_body:
+		var floor_shape := floor_body.get_node_or_null("CollisionShape2D") as CollisionShape2D
+		if floor_shape:
+			var floor_rect := RectangleShape2D.new()
+			floor_rect.size = Vector2(size_px.x, tile)
+			floor_shape.shape = floor_rect
+			# Align floor top with the ocean surface (top of the visual).
+			floor_shape.position = Vector2(0.0, -size_px.y * 0.5 + tile * 0.5)
+
+
+func _build_ocean_visual(size_px: Vector2) -> void:
+	for child in get_children():
+		if child is Sprite2D:
+			child.queue_free()
+
+	var tex := PlaceholderAcidOcean.create_texture()
+	var tile := float(PlaceholderTileset.TILE_SIZE)
+	var cols := maxi(ceili(size_px.x / tile), 1)
+	var rows := maxi(ceili(size_px.y / tile), 1)
+	var origin := -size_px * 0.5
+	for row in rows:
+		for col in cols:
+			var sprite := Sprite2D.new()
+			sprite.texture = tex
+			sprite.hframes = PlaceholderAcidOcean.TILE_COUNT
+			sprite.frame = col % PlaceholderAcidOcean.TILE_COUNT
+			sprite.centered = true
+			sprite.position = origin + Vector2((col + 0.5) * tile, (row + 0.5) * tile)
+			sprite.z_index = -1
+			add_child(sprite)
+
+
+func _physics_process(delta: float) -> void:
+	if _accum.is_empty():
+		return
+	var dead: Array = []
+	for id in _accum.keys():
+		var body := instance_from_id(id) as Node
+		if body == null or not is_instance_valid(body):
+			dead.append(id)
+			continue
+		if not _is_damageable(body):
+			continue
+		_accum[id] = float(_accum[id]) + DPS * delta
+		var dealt := int(_accum[id])
+		if dealt > 0 and body.has_method("take_damage"):
+			body.take_damage(dealt)
+			_accum[id] = float(_accum[id]) - float(dealt)
+	for id in dead:
+		_accum.erase(id)
 
 
 func _on_body_entered(body: Node2D) -> void:
-	if body.has_method("respawn"):
-		body.respawn()
-	elif body.is_in_group("enemy"):
-		body.queue_free()
+	if not _is_damageable(body):
+		return
+	_accum[body.get_instance_id()] = 0.0
+
+
+func _on_body_exited(body: Node2D) -> void:
+	_accum.erase(body.get_instance_id())
+
+
+func _is_damageable(body: Node) -> bool:
+	return body.is_in_group("player") or body.is_in_group("hiree")

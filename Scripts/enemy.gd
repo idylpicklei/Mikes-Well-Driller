@@ -24,6 +24,8 @@ var _no_move_for := 0.0
 var _stuck_jump_cd := 0.0
 var _hub_attack_cd := 0.0
 var _player_attack_cd := 0.0
+var _sprite: Sprite2D
+var _walk_phase := 0.0
 
 
 func configure(hp: int) -> void:
@@ -34,13 +36,17 @@ func configure(hp: int) -> void:
 func _ready() -> void:
 	add_to_group("enemy")
 	z_index = 2
-	var sprite := get_node_or_null("Sprite2D") as Sprite2D
-	if sprite:
-		sprite.texture = PlaceholderEnemy.create_texture()
-		sprite.position = PlaceholderEnemy.SPRITE_OFFSET
+	_sprite = get_node_or_null("Sprite2D") as Sprite2D
+	if _sprite:
+		_sprite.texture = PlaceholderEnemy.create_texture()
+		_sprite.position = PlaceholderEnemy.SPRITE_OFFSET
+		_sprite.hframes = PlaceholderEnemy.FRAME_COUNT
+		_sprite.vframes = 1
+		_sprite.frame = 0
+		_sprite.centered = true
 		if max_health > 1:
 			# Tough enemies read slightly darker so 2-HP is noticeable without new art.
-			sprite.modulate = Color(0.82, 0.72, 0.72, 1.0)
+			_sprite.modulate = Color(0.82, 0.72, 0.72, 1.0)
 	_apply_footprint_collision()
 
 
@@ -71,8 +77,23 @@ func _physics_process(delta: float) -> void:
 	else:
 		_hop_if_blocked(delta, dir)
 		_hop_if_stuck(delta, dir)
+	_update_walk_anim(delta, dir)
 	if global_position.y > 4000.0:
 		queue_free()
+
+
+func _update_walk_anim(delta: float, dir: float) -> void:
+	if _sprite == null:
+		return
+	if dir != 0.0:
+		_sprite.flip_h = dir < 0.0
+	var moving := absf(get_real_velocity().x) > 4.0 and is_on_floor()
+	if moving:
+		_walk_phase += delta * PlaceholderEnemy.WALK_FPS
+		_sprite.frame = int(_walk_phase) % PlaceholderEnemy.FRAME_COUNT
+	else:
+		_walk_phase = 0.0
+		_sprite.frame = 0
 
 
 func take_damage(amount: int) -> void:
