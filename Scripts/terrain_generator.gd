@@ -15,8 +15,11 @@ const PLACEHOLDER_ATLAS := "res://Assets/sprites/terrain_tileset.png"
 ## Keep first ships well off the start plateau so Mike can open B and place a hub.
 const MIN_SPAWNER_TILES := 100
 const SPAWNER_SIDE_CLEAR := 2
-const ACID_POOL_TILES := 12
-const ACID_DROP_TILES := 2
+## Beach (dry|wet|scum) then acid ocean past the map edge.
+const BEACH_TILES := 3
+const OCEAN_TILES := 12
+const OCEAN_DEPTH_TILES := 4
+const SHORE_MARGIN_TILES := BEACH_TILES + OCEAN_TILES
 
 var spawn_position := Vector2.ZERO
 
@@ -127,8 +130,8 @@ func _setup_world() -> void:
 		var camera := player.get_node_or_null("Camera2D") as Camera2D
 		if camera:
 			var tile := PlaceholderTileset.TILE_SIZE
-			camera.limit_left = -ACID_POOL_TILES * tile
-			camera.limit_right = (width + ACID_POOL_TILES) * tile
+			camera.limit_left = -SHORE_MARGIN_TILES * tile
+			camera.limit_right = (width + SHORE_MARGIN_TILES) * tile
 			camera.limit_top = -320
 			camera.limit_bottom = (bedrock_y + 4) * tile
 			camera.reset_smoothing()
@@ -143,27 +146,38 @@ func _setup_world() -> void:
 			rect.size = Vector2((width + 8) * PlaceholderTileset.TILE_SIZE, 80)
 			shape_node.shape = rect
 
-	_place_acid_pools(game)
+	_place_shores(game)
 	_place_enemy_spawners(game)
 	_place_stranded_hirees(game)
 
 
-func _place_acid_pools(game: Node) -> void:
+func _place_shores(game: Node) -> void:
+	# Left edge: land ends at x=0 → beach outward → acid ocean.
+	_add_shore(game, 0.0, _surface_y(0), -1.0)
+	# Right edge: land ends at width*tile → beach outward → acid ocean.
+	_add_shore(game, width * float(PlaceholderTileset.TILE_SIZE), _surface_y(width - 1), 1.0)
+
+
+func _add_shore(game: Node, edge_px: float, surface_cell_y: int, outward: float) -> void:
 	var tile := float(PlaceholderTileset.TILE_SIZE)
-	var pool_w := ACID_POOL_TILES * tile
-	var bottom := float((bedrock_y + 2) * PlaceholderTileset.TILE_SIZE)
-	_add_acid_pool(game, -pool_w, _surface_y(0) + ACID_DROP_TILES, pool_w, bottom)
-	_add_acid_pool(game, width * tile, _surface_y(width - 1) + ACID_DROP_TILES, pool_w, bottom)
+	var beach_w := float(BEACH_TILES) * tile
+	var ocean_w := float(OCEAN_TILES) * tile
+	var surface_px := float(surface_cell_y) * tile
 
+	var beach := preload("res://Scenes/beach_strip.tscn").instantiate()
+	game.add_child(beach)
+	# Beach sits on the grass surface, extending outward from the map edge.
+	beach.position = Vector2(edge_px, surface_px)
+	if beach.has_method("setup"):
+		beach.setup(outward)
 
-func _add_acid_pool(game: Node, left_px: float, top_cell_y: int, pool_w: float, bottom_px: float) -> void:
-	var top_px := float(top_cell_y * PlaceholderTileset.TILE_SIZE)
-	var height := maxf(bottom_px - top_px, float(PlaceholderTileset.TILE_SIZE) * 4.0)
-	var pool := preload("res://Scenes/acid_pool.tscn").instantiate()
-	game.add_child(pool)
-	pool.position = Vector2(left_px + pool_w * 0.5, top_px + height * 0.5)
-	if pool.has_method("setup"):
-		pool.setup(Vector2(pool_w, height))
+	var ocean_h := float(OCEAN_DEPTH_TILES) * tile
+	var ocean_center_x := edge_px + outward * (beach_w + ocean_w * 0.5)
+	var ocean := preload("res://Scenes/acid_pool.tscn").instantiate()
+	game.add_child(ocean)
+	ocean.position = Vector2(ocean_center_x, surface_px + ocean_h * 0.5)
+	if ocean.has_method("setup"):
+		ocean.setup(Vector2(ocean_w, ocean_h))
 
 
 func _place_enemy_spawners(game: Node) -> void:
