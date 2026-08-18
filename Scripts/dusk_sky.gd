@@ -1,10 +1,11 @@
 extends Node2D
 
-## Dusk sky behind everything: gradient + sparse stars.
-## Drop-in (optional): Assets/sprites/sky.png or Assets/sprites/stars.png —
-## if present, used as a tinted overlay; otherwise code gradient + stars.
-## Behind hills, clouds, terrain, Mike. PC only.
+## Dusk sky behind everything: still sky gradient + still sparse stars.
+## Artist drop-ins: sky_gradient.png (16×180 stretch), stars.png (320×180).
+## Fallback: code gradient + still seeded stars (no twinkle).
+## Behind hills_far, clouds, hills_mid, terrain, Mike. PC only.
 
+const SKY_GRADIENT_PATH := "res://Assets/sprites/sky_gradient.png"
 const SKY_PATH := "res://Assets/sprites/sky.png"
 const STARS_PATH := "res://Assets/sprites/stars.png"
 
@@ -29,14 +30,24 @@ func _ready() -> void:
 	z_index = -120
 	z_as_relative = false
 	y_sort_enabled = false
-	if ResourceLoader.exists(SKY_PATH):
-		_sky_overlay = load(SKY_PATH) as Texture2D
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_sky_overlay = _load_sky()
 	if ResourceLoader.exists(STARS_PATH):
 		_stars_overlay = load(STARS_PATH) as Texture2D
-	_seed_stars()
+	if _stars_overlay == null:
+		_seed_stars()
+	# Still sky/stars — redraw on camera move only, no twinkle process.
 	set_process(true)
 	call_deferred("_capture_y_baseline")
 	queue_redraw()
+
+
+func _load_sky() -> Texture2D:
+	if ResourceLoader.exists(SKY_GRADIENT_PATH):
+		return load(SKY_GRADIENT_PATH) as Texture2D
+	if ResourceLoader.exists(SKY_PATH):
+		return load(SKY_PATH) as Texture2D
+	return null
 
 
 func _seed_stars() -> void:
@@ -49,7 +60,6 @@ func _seed_stars() -> void:
 			"y": rng.randf_range(-0.48, -0.02),
 			"r": rng.randf_range(0.6, 1.6),
 			"a": rng.randf_range(0.35, 0.95),
-			"twinkle": rng.randf_range(0.0, TAU),
 		})
 
 
@@ -59,11 +69,9 @@ func _capture_y_baseline() -> void:
 	queue_redraw()
 
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	if not _baseline_ready:
 		_capture_y_baseline()
-	for star in _stars:
-		star["twinkle"] = float(star["twinkle"]) + delta * 1.4
 	queue_redraw()
 
 
@@ -112,11 +120,10 @@ func _draw_gradient(origin: Vector2) -> void:
 
 
 func _draw_stars(origin: Vector2, cam_x: float) -> void:
-	# Subtle horizontal drift with camera so stars feel distant, not glued to UI.
+	# Still stars with a tiny camera-linked parallax so they feel distant.
 	var parallax := cam_x * 0.015
 	for star in _stars:
-		var tw := 0.55 + 0.45 * sin(float(star["twinkle"]))
-		var a := float(star["a"]) * tw
+		var a := float(star["a"])
 		var pos := Vector2(
 			origin.x + VIEW_W * 0.5 + float(star["x"]) * VIEW_W - parallax,
 			origin.y + VIEW_H * 0.5 + float(star["y"]) * VIEW_H

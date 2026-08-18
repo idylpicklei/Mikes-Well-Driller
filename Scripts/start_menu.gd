@@ -32,7 +32,8 @@ func _ready() -> void:
 	_show_view(View.MAIN)
 
 
-## Keep the flat navy ColorRect until start_bg.png lands; then full-bleed art.
+## Still art only: one TextureRect from start_bg.png. No playfield camera, no parallax.
+## Keep the flat navy ColorRect until start_bg.png lands; then full-bleed nearest art.
 func _apply_start_background() -> void:
 	if not ResourceLoader.exists(START_BG_PATH):
 		return
