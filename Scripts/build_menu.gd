@@ -13,8 +13,11 @@ const CATEGORY_OUTER := 148.0
 const ITEM_INNER := 156.0
 const ITEM_OUTER := 222.0
 const SLICE_STEPS := 18
-const FONT_PATH := "res://Assets/fonts/PixelOperator8-Bold.ttf"
+const FONT_BODY_PATH := "res://Assets/fonts/kenpixel_mini.ttf"
+const FONT_TITLE_PATH := "res://Assets/fonts/kenpixel_mini_square.ttf"
+const CATALOG_CARD_PATH := "res://Assets/sprites/catalog_card.png"
 const DETAIL_WIDTH := 280.0
+const CARD_PATCH := 8
 
 ## Dusk-wasteland chrome — matches DefendHud.
 const COL_PANEL := Color(0.12, 0.09, 0.08, 0.94)
@@ -28,7 +31,10 @@ var categories: Array[Dictionary] = []
 var selected_category: StringName = &""
 var selected_item: StringName = &""
 
-var _font: Font
+var _font_body: Font
+var _font_title: Font
+var _catalog_card: Texture2D
+var _catalog_card_style: StyleBoxTexture
 var _hovered_category := -1
 var _hovered_item := -1
 var _open_t := 0.0
@@ -39,7 +45,17 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_font = load(FONT_PATH)
+	texture_filter = TEXTURE_FILTER_NEAREST
+	_font_body = load(FONT_BODY_PATH)
+	_font_title = load(FONT_TITLE_PATH)
+	_catalog_card = load(CATALOG_CARD_PATH)
+	if _catalog_card:
+		_catalog_card_style = StyleBoxTexture.new()
+		_catalog_card_style.texture = _catalog_card
+		_catalog_card_style.texture_margin_left = CARD_PATCH
+		_catalog_card_style.texture_margin_top = CARD_PATCH
+		_catalog_card_style.texture_margin_right = CARD_PATCH
+		_catalog_card_style.texture_margin_bottom = CARD_PATCH
 	if categories.is_empty():
 		categories = BuildCatalog.default_categories()
 	set_process(true)
@@ -210,7 +226,7 @@ func _draw() -> void:
 
 		var mid := (start + stop) * 0.5
 		var label_pos := center + Vector2(cos(mid), sin(mid)) * ((CATEGORY_INNER + CATEGORY_OUTER) * 0.5 * scale_t)
-		_draw_label(label_pos, _label_of(cats[i]), 16, COL_TEXT)
+		_draw_label(label_pos, _label_of(cats[i]), 16, COL_TEXT, true)
 
 	draw_circle(center, HUB_RADIUS * scale_t, COL_PANEL)
 	draw_arc(center, HUB_RADIUS * scale_t, 0.0, TAU, 48, COL_PANEL_EDGE, 2.0, true)
@@ -232,9 +248,9 @@ func _draw() -> void:
 		hub_title = _label_for(selected_category)
 		hub_sub = "Selected"
 
-	_draw_label(center + Vector2(0, -8), hub_title, 16, COL_TEXT)
-	_draw_label(center + Vector2(0, 12), hub_sub, 8, COL_MUTED)
-	_draw_label(Vector2(size.x * 0.5, size.y * 0.5 + ITEM_OUTER * scale_t + 36.0), "B  close", 8, COL_MUTED)
+	_draw_label(center + Vector2(0, -8), hub_title, 16, COL_TEXT, true)
+	_draw_label(center + Vector2(0, 12), hub_sub, 8, COL_MUTED, false)
+	_draw_label(Vector2(size.x * 0.5, size.y * 0.5 + ITEM_OUTER * scale_t + 36.0), "B  close", 8, COL_MUTED, false)
 
 	if detail_item != &"":
 		_draw_detail_panel(center, detail_item, scale_t)
@@ -245,12 +261,12 @@ func _draw_empty_hub(center: Vector2) -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), dim)
 	draw_circle(center, HUB_RADIUS * _open_t, COL_PANEL)
 	draw_arc(center, HUB_RADIUS * _open_t, 0.0, TAU, 48, COL_PANEL_EDGE, 2.0, true)
-	_draw_label(center + Vector2(0, -4), "BUILD", 16, COL_TEXT)
-	_draw_label(center + Vector2(0, 14), "Nothing left to place", 8, COL_MUTED)
+	_draw_label(center + Vector2(0, -4), "BUILD", 16, COL_TEXT, true)
+	_draw_label(center + Vector2(0, 14), "Nothing left to place", 8, COL_MUTED, false)
 
 
 func _draw_detail_panel(center: Vector2, item_id: StringName, scale_t: float) -> void:
-	if _font == null:
+	if _font_body == null and _font_title == null:
 		return
 	var blurb := BuildCatalog.item_blurb(item_id)
 	var stats := BuildCatalog.item_stats(item_id)
@@ -278,22 +294,28 @@ func _draw_detail_panel(center: Vector2, item_id: StringName, scale_t: float) ->
 		origin.y = center.y - ITEM_OUTER * scale_t - panel_h - 16.0
 
 	var box := Rect2(origin, Vector2(panel_w, panel_h))
-	draw_rect(box, COL_PANEL)
-	draw_rect(box, COL_PANEL_EDGE, false, 2.0)
-	draw_rect(Rect2(box.position + Vector2(2, 2), Vector2(box.size.x - 4, 2)), COL_TEAL * Color(1, 1, 1, 0.7))
+	if _catalog_card_style:
+		_catalog_card_style.draw(get_canvas_item(), box)
+	else:
+		draw_rect(box, COL_PANEL)
+		draw_rect(box, COL_PANEL_EDGE, false, 2.0)
 
+	var title_font := _font_title if _font_title else _font_body
+	var body_font := _font_body if _font_body else _font_title
 	var cursor := origin + Vector2(pad, pad + 10.0)
-	draw_string(_font, cursor, title, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, COL_TEXT)
-	cursor.y += 14.0
-	for line in blurb_wrapped:
-		draw_string(_font, cursor, line, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, COL_MUTED)
-		cursor.y += line_h
-	if not stats.is_empty():
-		cursor.y += 4.0
-		var stat_line := " · ".join(stats)
-		for line in _wrap_text(stat_line, DETAIL_WIDTH - pad * 2.0, 8):
-			draw_string(_font, cursor, line, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, COL_STAT)
+	if title_font:
+		draw_string(title_font, cursor, title, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, COL_TEXT)
+	cursor.y += 16.0
+	if body_font:
+		for line in blurb_wrapped:
+			draw_string(body_font, cursor, line, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, COL_MUTED)
 			cursor.y += line_h
+		if not stats.is_empty():
+			cursor.y += 4.0
+			var stat_line := " · ".join(stats)
+			for line in _wrap_text(stat_line, DETAIL_WIDTH - pad * 2.0, 8):
+				draw_string(body_font, cursor, line, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, COL_STAT)
+				cursor.y += line_h
 
 
 func hub_title_for(item_id: StringName) -> String:
@@ -306,13 +328,14 @@ func hub_title_for(item_id: StringName) -> String:
 
 func _wrap_text(text: String, max_width: float, font_size: int) -> PackedStringArray:
 	var out: PackedStringArray = []
-	if _font == null or text.is_empty():
+	var font := _font_body if _font_body else _font_title
+	if font == null or text.is_empty():
 		return out
 	var words := text.split(" ", false)
 	var current := ""
 	for word in words:
 		var trial := word if current.is_empty() else current + " " + word
-		var w := _font.get_string_size(trial, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+		var w := font.get_string_size(trial, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
 		if w <= max_width or current.is_empty():
 			current = trial
 		else:
@@ -341,7 +364,7 @@ func _draw_items(center: Vector2, category_index: int, category_count: int, item
 		_draw_ring_slice(center, ITEM_INNER * scale_t, ITEM_OUTER * scale_t, start, stop, fill)
 		var mid := (start + stop) * 0.5
 		var pos := center + Vector2(cos(mid), sin(mid)) * ((ITEM_INNER + ITEM_OUTER) * 0.5 * scale_t)
-		_draw_label(pos, _label_of(items[i]), 8, COL_TEXT)
+		_draw_label(pos, _label_of(items[i]), 8, COL_TEXT, false)
 
 
 func _draw_ring_slice(center: Vector2, inner_r: float, outer_r: float, start: float, stop: float, color: Color) -> void:
@@ -359,11 +382,18 @@ func _draw_ring_slice(center: Vector2, inner_r: float, outer_r: float, start: fl
 	draw_polyline(points, Color(0.08, 0.05, 0.04, 0.92), 1.5, true)
 
 
-func _draw_label(pos: Vector2, text: String, font_size: int, color: Color) -> void:
-	if _font == null:
+func _draw_label(pos: Vector2, text: String, font_size: int, color: Color, title: bool = false) -> void:
+	var font := _font_title if title and _font_title else _font_body
+	if font == null:
+		font = _font_title
+	if font == null:
 		return
-	var text_size := _font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
-	draw_string(_font, pos - text_size * 0.5 + Vector2(0, text_size.y * 0.35), text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
+	# Integer pixel sizes only (8 / 16 / 32).
+	var size_px := 16 if font_size >= 12 else 8
+	if font_size >= 28:
+		size_px = 32
+	var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px)
+	draw_string(font, pos - text_size * 0.5 + Vector2(0, text_size.y * 0.35), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, color)
 
 
 func _center() -> Vector2:

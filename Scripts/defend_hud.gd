@@ -1,7 +1,8 @@
 extends Control
 
 const START_MENU_SCENE := "res://Scenes/start_menu.tscn"
-const FONT_PATH := "res://Assets/fonts/PixelOperator8-Bold.ttf"
+const FONT_BODY_PATH := "res://Assets/fonts/kenpixel_mini.ttf"
+const FONT_TITLE_PATH := "res://Assets/fonts/kenpixel_mini_square.ttf"
 
 const COL_TEXT := Color(0.86, 0.78, 0.68, 1.0)
 const COL_MUTED := Color(0.62, 0.55, 0.48, 1.0)
@@ -16,21 +17,24 @@ const COL_POISON := Color(0.55, 0.78, 0.42, 1.0)
 @onready var _tank_row: Control = %TankRow
 @onready var _tank_bar: ProgressBar = %TankHealthBar
 @onready var _crew: Label = %CrewLabel
-@onready var _water_bar: ProgressBar = %WaterBar
+@onready var _water_bar: TextureProgressBar = %WaterBar
 @onready var _water_label: Label = %WaterLabel
 @onready var _gpm_label: Label = %GpmLabel
 @onready var _game_over: ColorRect = %GameOver
 @onready var _menu_button: Button = %MenuButton
 
 var _hub: Node = null
-var _font: Font
+var _font_body: Font
+var _font_title: Font
 var _tank_fill_clean: StyleBoxFlat
 var _tank_fill_poison: StyleBoxFlat
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	_font = load(FONT_PATH)
+	texture_filter = TEXTURE_FILTER_NEAREST
+	_font_body = load(FONT_BODY_PATH)
+	_font_title = load(FONT_TITLE_PATH)
 	_game_over.add_to_group("game_over")
 	_cache_tank_styles()
 	_apply_hud_look()
@@ -62,8 +66,11 @@ func _apply_hud_look() -> void:
 		var label := node as Label
 		if _game_over.is_ancestor_of(label):
 			continue
-		if _font:
-			label.add_theme_font_override("font", _font)
+		var is_title := label.name.ends_with("Title")
+		var font := _font_title if is_title else _font_body
+		if font:
+			label.add_theme_font_override("font", font)
+			label.add_theme_font_size_override("font_size", 8)
 		label.add_theme_color_override("font_color", COL_TEXT)
 	_status.add_theme_color_override("font_color", COL_MUTED)
 	_gpm_label.add_theme_color_override("font_color", COL_TEAL)
@@ -72,13 +79,21 @@ func _apply_hud_look() -> void:
 
 
 func _apply_game_over_fonts() -> void:
-	if _font == null:
-		return
-	for node in _game_over.find_children("*", "Label", true, false):
-		var label := node as Label
-		label.add_theme_font_override("font", _font)
-		label.add_theme_color_override("font_color", COL_TEXT)
-	_menu_button.add_theme_font_override("font", _font)
+	if _font_title:
+		var title := _game_over.find_child("Title", true, false) as Label
+		if title:
+			title.add_theme_font_override("font", _font_title)
+			title.add_theme_font_size_override("font_size", 16)
+			title.add_theme_color_override("font_color", COL_TEXT)
+	if _font_body:
+		var subtitle := _game_over.find_child("Subtitle", true, false) as Label
+		if subtitle:
+			subtitle.add_theme_font_override("font", _font_body)
+			subtitle.add_theme_font_size_override("font_size", 8)
+			subtitle.add_theme_color_override("font_color", COL_TEXT)
+	if _font_title:
+		_menu_button.add_theme_font_override("font", _font_title)
+		_menu_button.add_theme_font_size_override("font_size", 8)
 
 
 func _connect_signals() -> void:
