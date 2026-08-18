@@ -1,6 +1,6 @@
 extends Node2D
 
-## Auto-turret: spends nothing to fire, aims nearest living enemy in range.
+## Auto-turret: only fires when staffed by a hire. Strength scales fire rate + damage.
 
 const BULLET_SCENE := preload("res://Scenes/bullet.tscn")
 const RANGE_PX := 140.0
@@ -8,6 +8,8 @@ const FIRE_COOLDOWN := 0.75
 const MUZZLE_HEIGHT := -24.0
 
 var _cooldown := 0.0
+var _staff: Node = null
+var _staff_strength := 1
 
 
 func _ready() -> void:
@@ -19,8 +21,33 @@ func _ready() -> void:
 		sprite.position = PlaceholderTurret.SPRITE_OFFSET
 
 
+func is_staffed() -> bool:
+	return is_instance_valid(_staff)
+
+
+func is_staffed_by(hiree: Node) -> bool:
+	return is_staffed() and _staff == hiree
+
+
+func staff(hiree: Node, strength: int = 1) -> bool:
+	if hiree == null or is_staffed():
+		return false
+	_staff = hiree
+	_staff_strength = maxi(strength, 1)
+	return true
+
+
+func unstaff(hiree: Node = null) -> void:
+	if hiree != null and _staff != hiree:
+		return
+	_staff = null
+	_staff_strength = 1
+
+
 func _physics_process(delta: float) -> void:
 	_cooldown = maxf(_cooldown - delta, 0.0)
+	if not is_staffed():
+		return
 	if _cooldown > 0.0:
 		return
 	var target := _nearest_enemy()
@@ -46,7 +73,8 @@ func _nearest_enemy() -> Node2D:
 
 
 func _shoot_at(target: Node2D) -> void:
-	_cooldown = FIRE_COOLDOWN
+	var rate := float(_staff_strength)
+	_cooldown = FIRE_COOLDOWN / maxf(rate, 1.0)
 	var muzzle := global_position + Vector2(0.0, MUZZLE_HEIGHT)
 	var aim_at := target.global_position + Vector2(0.0, -8.0)
 	var dir := (aim_at - muzzle).normalized()
@@ -61,4 +89,4 @@ func _shoot_at(target: Node2D) -> void:
 	get_tree().current_scene.add_child(bullet)
 	bullet.global_position = muzzle
 	# Same bullet + ignore path as the player gun: hub/walls block but take no damage.
-	bullet.setup(dir, self)
+	bullet.setup(dir, self, _staff_strength)

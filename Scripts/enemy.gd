@@ -117,23 +117,28 @@ func _is_blocked(dir: float) -> bool:
 
 func _attack_player(delta: float) -> bool:
 	_player_attack_cd = maxf(_player_attack_cd - delta, 0.0)
-	var player := _touching_player()
-	if player == null:
+	var victim := _touching_player_or_hiree()
+	if victim == null:
 		return false
-	if _player_attack_cd <= 0.0 and player.has_method("take_damage"):
-		player.take_damage(PLAYER_DAMAGE)
+	if _player_attack_cd <= 0.0 and victim.has_method("take_damage"):
+		victim.take_damage(PLAYER_DAMAGE)
 		_player_attack_cd = PLAYER_ATTACK_COOLDOWN
 	return true
 
 
-func _touching_player() -> Node:
+func _touching_player_or_hiree() -> Node:
 	for i in get_slide_collision_count():
 		var other := get_slide_collision(i).get_collider()
-		if other is Node and (other as Node).is_in_group("player"):
-			return other as Node
-	var node := get_tree().get_first_node_in_group("player")
-	if node is Node2D and global_position.distance_to((node as Node2D).global_position) <= PLAYER_TOUCH_RANGE:
-		return node
+		if other is Node:
+			var n := other as Node
+			if n.is_in_group("player") or n.is_in_group("hiree"):
+				return n
+	var player := get_tree().get_first_node_in_group("player")
+	if player is Node2D and global_position.distance_to((player as Node2D).global_position) <= PLAYER_TOUCH_RANGE:
+		return player
+	for node in get_tree().get_nodes_in_group("hiree"):
+		if node is Node2D and global_position.distance_to((node as Node2D).global_position) <= PLAYER_TOUCH_RANGE:
+			return node
 	return null
 
 
