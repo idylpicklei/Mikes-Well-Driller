@@ -2,7 +2,8 @@ extends Node2D
 
 
 const BULLET_SCENE := preload("res://Scenes/bullet.tscn")
-const FIRE_COOLDOWN := 0.42
+## Modest firerate bump (~25% shorter than 0.42); Glock only — not turret cadence.
+const FIRE_COOLDOWN := 0.315
 const RECOIL := 190.0
 const KICK_ANGLE := -0.55
 const SHAKE_STRENGTH := 3.2
