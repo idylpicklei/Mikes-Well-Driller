@@ -8,10 +8,10 @@
 [ext_resource type="Texture2D" uid="uid://c7q0b0vqqafbi" path="res://Assets/sprites/water_bar_fill.png" id="6_water_fill"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_bar"]
-content_margin_left = 12.0
-content_margin_top = 10.0
-content_margin_right = 12.0
-content_margin_bottom = 10.0
+content_margin_left = 6.0
+content_margin_top = 3.0
+content_margin_right = 6.0
+content_margin_bottom = 3.0
 texture = ExtResource("4_panel")
 texture_margin_left = 6.0
 texture_margin_top = 6.0
@@ -64,7 +64,7 @@ anchor_left = 0.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -300.0
+offset_top = -44.0
 grow_horizontal = 2
 grow_vertical = 0
 mouse_filter = 2
@@ -72,29 +72,31 @@ theme_override_styles/panel = SubResource("StyleBoxTexture_bar")
 
 [node name="VBox" type="VBoxContainer" parent="DefendHud/HudBar"]
 layout_mode = 2
-theme_override_constants/separation = 8
+mouse_filter = 2
+theme_override_constants/separation = 2
 
-[node name="WaterRow" type="HBoxContainer" parent="DefendHud/HudBar/VBox"]
+[node name="GaugesRow" type="HBoxContainer" parent="DefendHud/HudBar/VBox"]
 layout_mode = 2
-theme_override_constants/separation = 12
+mouse_filter = 2
+theme_override_constants/separation = 10
 
-[node name="WaterTitle" type="Label" parent="DefendHud/HudBar/VBox/WaterRow"]
+[node name="WaterTitle" type="Label" parent="DefendHud/HudBar/VBox/GaugesRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
+mouse_filter = 2
 theme_override_fonts/font = ExtResource("3_font_title")
-theme_override_font_sizes/font_size = 32
-text = "WATER"
+theme_override_font_sizes/font_size = 16
+text = "W"
 vertical_alignment = 1
 
-[node name="WaterBarHost" type="Control" parent="DefendHud/HudBar/VBox/WaterRow"]
-custom_minimum_size = Vector2(280, 36)
+[node name="WaterBarHost" type="Control" parent="DefendHud/HudBar/VBox/GaugesRow"]
+custom_minimum_size = Vector2(120, 12)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
 mouse_filter = 2
 
-[node name="WaterFrame" type="NinePatchRect" parent="DefendHud/HudBar/VBox/WaterRow/WaterBarHost"]
+[node name="WaterFrame" type="NinePatchRect" parent="DefendHud/HudBar/VBox/GaugesRow/WaterBarHost"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -110,16 +112,16 @@ patch_margin_bottom = 2
 axis_stretch_horizontal = 1
 axis_stretch_vertical = 1
 
-[node name="WaterBar" type="TextureProgressBar" parent="DefendHud/HudBar/VBox/WaterRow/WaterBarHost"]
+[node name="WaterBar" type="TextureProgressBar" parent="DefendHud/HudBar/VBox/GaugesRow/WaterBarHost"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 3.0
-offset_top = 3.0
-offset_right = -3.0
-offset_bottom = -3.0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = -2.0
+offset_bottom = -2.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
@@ -128,42 +130,36 @@ nine_patch_stretch = true
 texture_progress = ExtResource("6_water_fill")
 tint_progress = Color(0.35, 0.72, 0.78, 1)
 
-[node name="WaterLabel" type="Label" parent="DefendHud/HudBar/VBox/WaterRow"]
+[node name="WaterLabel" type="Label" parent="DefendHud/HudBar/VBox/GaugesRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(260, 0)
 layout_mode = 2
+mouse_filter = 2
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 32
-text = "0 / 1000 gal"
-horizontal_alignment = 2
+theme_override_font_sizes/font_size = 16
+text = "0/1000"
 vertical_alignment = 1
 
-[node name="GpmLabel" type="Label" parent="DefendHud/HudBar/VBox/WaterRow"]
+[node name="GpmLabel" type="Label" parent="DefendHud/HudBar/VBox/GaugesRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
+mouse_filter = 2
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 32
-text = "0.0 gpm"
-horizontal_alignment = 2
+theme_override_font_sizes/font_size = 16
+text = "0.0gpm"
 vertical_alignment = 1
 
-[node name="MikeRow" type="HBoxContainer" parent="DefendHud/HudBar/VBox"]
-layout_mode = 2
-theme_override_constants/separation = 12
-
-[node name="MikeTitle" type="Label" parent="DefendHud/HudBar/VBox/MikeRow"]
+[node name="MikeTitle" type="Label" parent="DefendHud/HudBar/VBox/GaugesRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
+mouse_filter = 2
 theme_override_fonts/font = ExtResource("3_font_title")
-theme_override_font_sizes/font_size = 32
-text = "MIKE"
+theme_override_font_sizes/font_size = 16
+text = "M"
 vertical_alignment = 1
 
-[node name="MikeHealthBar" type="ProgressBar" parent="DefendHud/HudBar/VBox/MikeRow"]
+[node name="MikeHealthBar" type="ProgressBar" parent="DefendHud/HudBar/VBox/GaugesRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(280, 36)
+custom_minimum_size = Vector2(90, 12)
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
@@ -173,34 +169,35 @@ max_value = 50.0
 value = 50.0
 show_percentage = false
 
-[node name="MikeHealthLabel" type="Label" parent="DefendHud/HudBar/VBox/MikeRow"]
+[node name="MikeHealthLabel" type="Label" parent="DefendHud/HudBar/VBox/GaugesRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
+mouse_filter = 2
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 32
-text = "50 / 50"
-horizontal_alignment = 2
+theme_override_font_sizes/font_size = 16
+text = "50/50"
 vertical_alignment = 1
 
-[node name="TankRow" type="HBoxContainer" parent="DefendHud/HudBar/VBox"]
+[node name="TankRow" type="HBoxContainer" parent="DefendHud/HudBar/VBox/GaugesRow"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
-theme_override_constants/separation = 12
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 6
 
-[node name="TankTitle" type="Label" parent="DefendHud/HudBar/VBox/TankRow"]
+[node name="TankTitle" type="Label" parent="DefendHud/HudBar/VBox/GaugesRow/TankRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
+mouse_filter = 2
 theme_override_fonts/font = ExtResource("3_font_title")
-theme_override_font_sizes/font_size = 32
-text = "TANK"
+theme_override_font_sizes/font_size = 16
+text = "T"
 vertical_alignment = 1
 
-[node name="TankHealthBar" type="ProgressBar" parent="DefendHud/HudBar/VBox/TankRow"]
+[node name="TankHealthBar" type="ProgressBar" parent="DefendHud/HudBar/VBox/GaugesRow/TankRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(280, 36)
+custom_minimum_size = Vector2(90, 12)
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
@@ -209,30 +206,41 @@ theme_override_styles/fill = SubResource("StyleBoxFlat_tank_fill")
 max_value = 100.0
 show_percentage = false
 
-[node name="HealthLabel" type="Label" parent="DefendHud/HudBar/VBox/TankRow"]
+[node name="HealthLabel" type="Label" parent="DefendHud/HudBar/VBox/GaugesRow/TankRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(320, 0)
 layout_mode = 2
+mouse_filter = 2
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 16
 text = ""
-horizontal_alignment = 2
 vertical_alignment = 1
 
-[node name="StatusLabel" type="Label" parent="DefendHud/HudBar/VBox"]
-unique_name_in_owner = true
+[node name="MetaRow" type="HBoxContainer" parent="DefendHud/HudBar/VBox"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 32
-text = "Build a Main Hub from Utility (B)"
-autowrap_mode = 3
+mouse_filter = 2
+theme_override_constants/separation = 10
 
-[node name="CrewLabel" type="Label" parent="DefendHud/HudBar/VBox"]
+[node name="StatusLabel" type="Label" parent="DefendHud/HudBar/VBox/MetaRow"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 16
+text = "Build a Main Hub from Utility (B)"
+text_overrun_behavior = 3
+clip_text = true
+vertical_alignment = 1
+
+[node name="CrewLabel" type="Label" parent="DefendHud/HudBar/VBox/MetaRow"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 16
 text = "Hired: 0"
+horizontal_alignment = 2
+vertical_alignment = 1
 
 [node name="GameOver" type="ColorRect" parent="DefendHud"]
 unique_name_in_owner = true
@@ -257,28 +265,28 @@ grow_vertical = 2
 
 [node name="Panel" type="VBoxContainer" parent="DefendHud/GameOver/Center"]
 layout_mode = 2
-theme_override_constants/separation = 18
+theme_override_constants/separation = 12
 
 [node name="Title" type="Label" parent="DefendHud/GameOver/Center/Panel"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_font_title")
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 16
 text = "Game Over"
 horizontal_alignment = 1
 
 [node name="Subtitle" type="Label" parent="DefendHud/GameOver/Center/Panel"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 16
 text = "Fat Mike was killed."
 horizontal_alignment = 1
 
 [node name="MenuButton" type="Button" parent="DefendHud/GameOver/Center/Panel"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(360, 56)
+custom_minimum_size = Vector2(220, 36)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_font_title")
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 16
 text = "Return to Menu"
 
 [connection signal="pressed" from="DefendHud/GameOver/Center/Panel/MenuButton" to="DefendHud" method="_on_game_over_menu_pressed"]
