@@ -105,6 +105,7 @@ func _build_bind_rows() -> void:
 		var name_label := Label.new()
 		name_label.text = str(definition["label"])
 		name_label.custom_minimum_size = Vector2(140, 0)
+		name_label.add_theme_color_override("font_color", Color(0.78, 0.8, 0.84))
 		row.add_child(name_label)
 
 		var bind_button := Button.new()

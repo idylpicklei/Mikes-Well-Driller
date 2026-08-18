@@ -79,6 +79,7 @@ func _build_bind_rows() -> void:
 		if _font:
 			name_label.add_theme_font_override("font", _font)
 			name_label.add_theme_font_size_override("font_size", 8)
+		name_label.add_theme_color_override("font_color", Color(0.78, 0.8, 0.84))
 		row.add_child(name_label)
 
 		var bind_button := Button.new()
