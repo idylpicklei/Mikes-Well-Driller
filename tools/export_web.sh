@@ -44,7 +44,8 @@ install_linux_godot() {
 	local zip="/tmp/godot-install/godot.zip"
 	curl -L --retry 3 -o "${zip}" \
 		"https://github.com/godotengine/godot/releases/download/${GODOT_TAG}/Godot_v${GODOT_TAG}_linux.x86_64.zip"
-	unzip -o "${zip}" -d /tmp/godot-install
+	# Quiet unzip so captured GODOT_BIN is only the binary path.
+	unzip -qo "${zip}" -d /tmp/godot-install
 	chmod +x "/tmp/godot-install/Godot_v${GODOT_TAG}_linux.x86_64"
 	echo "/tmp/godot-install/Godot_v${GODOT_TAG}_linux.x86_64"
 }
@@ -69,7 +70,7 @@ ensure_templates() {
 		curl -L --retry 3 -o "${tpz}" \
 			"https://github.com/godotengine/godot/releases/download/${GODOT_TAG}/Godot_v${GODOT_TAG}_export_templates.tpz"
 	fi
-	unzip -o "${tpz}" templates/web_nothreads_debug.zip templates/web_nothreads_release.zip \
+	unzip -qo "${tpz}" templates/web_nothreads_debug.zip templates/web_nothreads_release.zip \
 		-d /tmp/godot-install/templates-extract
 	cp /tmp/godot-install/templates-extract/templates/web_nothreads_debug.zip \
 		/tmp/godot-install/templates-extract/templates/web_nothreads_release.zip \

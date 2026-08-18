@@ -147,16 +147,18 @@ func _bind_hub(hub: Node) -> void:
 	if _hub and _hub.has_signal("health_changed"):
 		if _hub.health_changed.is_connected(_on_hub_health_changed):
 			_hub.health_changed.disconnect(_on_hub_health_changed)
-		if _hub.destroyed.is_connected(_on_hub_destroyed):
-			_hub.destroyed.disconnect(_on_hub_destroyed)
+		if _hub.has_signal("tank_poisoned") and _hub.tank_poisoned.is_connected(_on_tank_poisoned):
+			_hub.tank_poisoned.disconnect(_on_tank_poisoned)
 
 	_hub = hub
 	if "health" in _hub and "MAX_HEALTH" in _hub:
 		_on_hub_health_changed(int(_hub.health), int(_hub.MAX_HEALTH))
 	if _hub.has_signal("health_changed"):
 		_hub.health_changed.connect(_on_hub_health_changed)
-	if _hub.has_signal("destroyed"):
-		_hub.destroyed.connect(_on_hub_destroyed)
+	if _hub.has_signal("tank_poisoned"):
+		_hub.tank_poisoned.connect(_on_tank_poisoned)
+	if "is_tank_poisoned" in _hub and bool(_hub.is_tank_poisoned):
+		_on_tank_poisoned()
 
 
 func _on_mike_health_changed(current: int, maximum: int) -> void:
@@ -171,15 +173,20 @@ func _on_mike_died() -> void:
 
 
 func _on_hub_health_changed(current: int, maximum: int) -> void:
-	_health.text = "Hub HP: %d / %d" % [current, maximum]
+	var poisoned := _hub != null and "is_tank_poisoned" in _hub and bool(_hub.is_tank_poisoned)
+	if poisoned or current <= 0:
+		_health.text = "Tank: Poisoned · HP %d / %d" % [current, maximum]
+	else:
+		_health.text = "Tank: Clean · HP %d / %d" % [current, maximum]
 
 
-func _on_hub_destroyed() -> void:
-	_hub = null
-	_health.text = "Hub destroyed!"
-	_status.text = "The Main Hub was lost."
-	_set_game_over_subtitle("The Main Hub was destroyed.")
-	_show_game_over()
+func _on_tank_poisoned() -> void:
+	# Hub stays standing — no instant Game Over. Mike thirst-ticks down to Fat Mike GO.
+	if _hub and "health" in _hub and "MAX_HEALTH" in _hub:
+		_on_hub_health_changed(int(_hub.health), int(_hub.MAX_HEALTH))
+	else:
+		_health.text = "Tank: Poisoned"
+	_status.text = "Tank poisoned — Mike is dying of thirst! (stored water is undrinkable)"
 
 
 func _set_game_over_subtitle(text: String) -> void:
