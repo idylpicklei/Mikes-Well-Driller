@@ -27,6 +27,7 @@ var _open_t := 0.0
 
 func _ready() -> void:
 	add_to_group("build_menu")
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_font = load(FONT_PATH)
@@ -46,7 +47,7 @@ func add_category(id: StringName, label: String, color: Color, items: Array = []
 
 
 func toggle() -> void:
-	if get_tree().paused:
+	if _should_block_toggle():
 		return
 	_set_open(not is_open)
 
@@ -61,17 +62,36 @@ func close_menu_instance() -> void:
 	_set_open(false)
 
 
+func _should_block_toggle() -> bool:
+	# Allow closing while we ourselves paused the tree; block only Esc-pause / game over.
+	if PauseMenu.is_open:
+		return true
+	return _game_over_visible()
+
+
+func _game_over_visible() -> bool:
+	for node in get_tree().get_nodes_in_group("game_over"):
+		if node is CanvasItem and (node as CanvasItem).visible:
+			return true
+	return false
+
+
 func _set_open(open: bool) -> void:
 	BuildMenu.is_open = open
 	mouse_filter = Control.MOUSE_FILTER_STOP if open else Control.MOUSE_FILTER_IGNORE
 	if open:
 		_hovered_category = -1
 		_hovered_item = -1
+		get_tree().paused = true
+	else:
+		# Keep pause if Esc pause or Game Over owns it; else resume so placement can run.
+		if not PauseMenu.is_open and not _game_over_visible():
+			get_tree().paused = false
 	queue_redraw()
 
 
 func _input(event: InputEvent) -> void:
-	if get_tree().paused:
+	if PauseMenu.is_open or _game_over_visible():
 		return
 	if event.is_action_pressed("build_menu") and not event.is_echo():
 		toggle()

@@ -13,6 +13,7 @@ var health := MAX_HEALTH
 var is_tank_poisoned := false
 
 var _thirst_cd := 0.0
+var _tank_sprite: Sprite2D
 
 
 func _ready() -> void:
@@ -25,7 +26,30 @@ func _ready() -> void:
 	if sprite:
 		sprite.texture = PlaceholderHub.create_texture()
 		sprite.position = PlaceholderHub.SPRITE_OFFSET
+		sprite.modulate = Color.WHITE
+	_ensure_tank_overlay()
+	_refresh_tank_overlay()
 	health_changed.emit(health, MAX_HEALTH)
+
+
+func _ensure_tank_overlay() -> void:
+	_tank_sprite = get_node_or_null("TankSprite") as Sprite2D
+	if _tank_sprite == null:
+		_tank_sprite = Sprite2D.new()
+		_tank_sprite.name = "TankSprite"
+		add_child(_tank_sprite)
+	_tank_sprite.centered = true
+	_tank_sprite.position = PlaceholderTank.SPRITE_OFFSET
+	_tank_sprite.z_index = 1
+
+
+func _refresh_tank_overlay() -> void:
+	if _tank_sprite == null:
+		return
+	if is_tank_poisoned:
+		_tank_sprite.texture = PlaceholderTank.create_poisoned_texture()
+	else:
+		_tank_sprite.texture = PlaceholderTank.create_texture()
 
 
 func take_damage(amount: int) -> void:
@@ -70,17 +94,14 @@ func _tick_thirst() -> void:
 
 
 func _apply_poisoned_look() -> void:
-	# No overlay art yet — a soft sick tint on the existing hub sprite is enough.
-	var sprite := get_node_or_null("Sprite2D") as Sprite2D
-	if sprite:
-		sprite.modulate = Color(0.72, 0.95, 0.55, 1.0)
+	# Overlay swap only — hub body stays un-tinted and standing.
+	_refresh_tank_overlay()
 
 
 func _flash_damage() -> void:
 	var sprite := get_node_or_null("Sprite2D") as Sprite2D
 	if sprite == null:
 		return
-	var base := Color(0.72, 0.95, 0.55, 1.0) if is_tank_poisoned else Color.WHITE
 	var tween := create_tween()
 	tween.tween_property(sprite, "modulate", Color(1.4, 0.55, 0.55), 0.06)
-	tween.tween_property(sprite, "modulate", base, 0.12)
+	tween.tween_property(sprite, "modulate", Color.WHITE, 0.12)
