@@ -3,6 +3,9 @@ extends StaticBody2D
 ## Alien ship: spawns blobs at a steady sandbox rate until destroyed.
 
 const ENEMY_SCENE := preload("res://Scenes/enemy.tscn")
+const THROWER_SCENE := preload("res://Scenes/enemy_thrower.tscn")
+## After the first crab pack, about one in three spawns is a ranged thrower.
+const THROWER_MIX_CHANCE := 1.0 / 3.0
 ## Steady sandbox cadence after the opening grace window.
 const SPAWN_INTERVAL := 8.0
 ## One minute to explore / place a hub before ships appear and dump the first pack.
@@ -75,22 +78,24 @@ func _process(delta: float) -> void:
 		if _timer >= FIRST_SPAWN_DELAY:
 			_timer = 0.0
 			_set_ship_active(true)
-			_spawned_once = true
+			# First pack stays crabs so 1:00 is still a rush.
 			_spawn()
+			_spawned_once = true
 		return
 	if _timer >= SPAWN_INTERVAL and _alive.size() < MAX_ALIVE:
 		_timer = 0.0
-		_spawned_once = true
 		_spawn()
+		_spawned_once = true
 
 
 func _spawn() -> void:
 	var host := get_parent()
 	if host == null:
 		return
-	var enemy := ENEMY_SCENE.instantiate()
+	var use_thrower := _spawned_once and randf() < THROWER_MIX_CHANCE
+	var enemy: Node = (THROWER_SCENE if use_thrower else ENEMY_SCENE).instantiate()
 	if enemy.has_method("configure"):
-		enemy.configure(1)
+		enemy.configure(2 if use_thrower else 1)
 	host.add_child(enemy)
 	var side := -1.0 if randf() < 0.5 else 1.0
 	var offset_x := (PlaceholderSpawner.SIZE.x * 0.5) + (PlaceholderTileset.TILE_SIZE * 1.5)
