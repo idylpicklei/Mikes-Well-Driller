@@ -1,6 +1,7 @@
 extends Node2D
 
 ## Far + mid rolling hills — seamless horizontal tiles, not random stamps.
+## Node2D in world space — not ParallaxBackground. Camera-X parallax is in code.
 ## Draw stack: sky → stars → hills_far → clouds → hills_mid → terrain/Mike.
 ## Horizontal parallax from camera X only (no autonomous scroll).
 ## Hop dampened (a little, not locked).

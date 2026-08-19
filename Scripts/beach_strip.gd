@@ -5,7 +5,7 @@ extends StaticBody2D
 ## Artist drop-in: replace Assets/sprites/beach.png (same 4×16 layout); no code change.
 
 ## Depth below grass surface for dry | wet | scum | shallow-blend (pixels).
-const DEPTHS_PX := [0.0, 4.0, 8.0, 12.0]
+const DEPTHS_PX: Array[float] = [0.0, 4.0, 8.0, 12.0]
 ## Soft acid wash under wet/scum/shallow-blend so poison blends into sand (current tiles stay on top).
 const BLEND_COLOR := Color(0.28, 0.78, 0.18, 0.35)
 
@@ -37,8 +37,8 @@ func _build_acid_blend(outward: float, tile: float, count: int) -> void:
 	blend.name = "AcidBlend"
 	var start := 1.0 * tile  # from wet
 	var end := float(count) * tile
-	var top: float = float(DEPTHS_PX[1])
-	var bot: float = float(DEPTHS_PX[mini(count - 1, DEPTHS_PX.size() - 1)]) + tile
+	var top := _depth_at(1)
+	var bot := _depth_at(count - 1) + tile
 	var x0 := outward * start
 	var x1 := outward * end
 	blend.polygon = PackedVector2Array([
@@ -49,6 +49,11 @@ func _build_acid_blend(outward: float, tile: float, count: int) -> void:
 	add_child(blend)
 
 
+func _depth_at(index: int) -> float:
+	var i := clampi(index, 0, DEPTHS_PX.size() - 1)
+	return DEPTHS_PX[i]
+
+
 ## Stack acid_ocean.png row-1 fill under the beach so the shore cross-section is not a void.
 func _build_underfill(outward: float, tile: float, count: int) -> void:
 	var acid_tex := PlaceholderAcidOcean.create_texture()
@@ -57,7 +62,7 @@ func _build_underfill(outward: float, tile: float, count: int) -> void:
 	# Enough fill rows to read as solid under the ramp (TileMap also fills to bedrock).
 	var fill_rows := 8
 	for i in count:
-		var depth: float = DEPTHS_PX[mini(i, DEPTHS_PX.size() - 1)]
+		var depth := _depth_at(i)
 		var along := (i + 0.5) * tile
 		for row in fill_rows:
 			var sprite := Sprite2D.new()
@@ -76,7 +81,7 @@ func _build_underfill(outward: float, tile: float, count: int) -> void:
 
 func _build_ramp_collision(outward: float, tile: float, count: int, overlap: float) -> void:
 	for i in count:
-		var depth: float = DEPTHS_PX[mini(i, DEPTHS_PX.size() - 1)]
+		var depth := _depth_at(i)
 		var along0 := float(i) * tile
 		var along1 := float(i + 1) * tile
 		var coll_w := tile
@@ -95,7 +100,7 @@ func _build_ramp_collision(outward: float, tile: float, count: int, overlap: flo
 
 func _build_sprites(outward: float, tile: float, count: int, tex: Texture2D) -> void:
 	for i in count:
-		var depth: float = DEPTHS_PX[mini(i, DEPTHS_PX.size() - 1)]
+		var depth := _depth_at(i)
 		var sprite := Sprite2D.new()
 		sprite.texture = tex
 		sprite.hframes = count

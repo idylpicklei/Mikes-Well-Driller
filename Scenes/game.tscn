@@ -17,15 +17,21 @@ size = Vector2(8000, 80)
 [node name="Game" type="Node2D"]
 
 [node name="DuskSky" type="Node2D" parent="."]
+editor_description = "World-space dusk layer. Must stay Node2D — not ParallaxBackground."
 z_index = -120
+z_as_relative = false
 script = ExtResource("9_sky")
 
 [node name="DuskHills" type="Node2D" parent="."]
+editor_description = "World-space dusk layer. Must stay Node2D — not ParallaxBackground."
 z_index = -100
+z_as_relative = false
 script = ExtResource("10_hills")
 
 [node name="DuskClouds" type="Node2D" parent="."]
+editor_description = "World-space dusk layer. Must stay Node2D — not ParallaxBackground."
 z_index = -80
+z_as_relative = false
 script = ExtResource("8_clouds")
 
 [node name="Terrain" type="TileMapLayer" parent="."]
