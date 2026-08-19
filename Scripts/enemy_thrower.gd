@@ -63,10 +63,11 @@ func _apply_footprint_collision() -> void:
 	var shape_node := get_node_or_null("CollisionShape2D") as CollisionShape2D
 	if shape_node == null:
 		return
+	# Body-sized rect with feet at the CharacterBody2D origin (not the 64 cell).
 	var rect := RectangleShape2D.new()
-	rect.size = Vector2(PlaceholderThrower.SIZE)
+	rect.size = PlaceholderThrower.COLLISION_SIZE
 	shape_node.shape = rect
-	shape_node.position = PlaceholderThrower.SPRITE_OFFSET
+	shape_node.position = PlaceholderThrower.COLLISION_OFFSET
 
 
 func _physics_process(delta: float) -> void:
@@ -163,8 +164,8 @@ func _release_throw(aim: Node2D) -> void:
 		return
 	var glob := GLOB_SCENE.instantiate()
 	host.add_child(glob)
-	# Muzzle near upper torso of the 64px thrower (scaled from the old 32px -22).
-	var muzzle := global_position + Vector2(0.0, -44.0)
+	# Muzzle near upper torso of the copper body (feet-origin collision).
+	var muzzle := global_position + Vector2(0.0, -PlaceholderThrower.COLLISION_SIZE.y + 2.0)
 	glob.global_position = muzzle
 	var aim_point := aim.global_position + Vector2(0.0, -12.0)
 	if glob.has_method("setup"):
@@ -261,8 +262,8 @@ func _wall_blocks(dir: float) -> bool:
 				return true
 	var space := get_world_2d().direct_space_state
 	var probe := RectangleShape2D.new()
-	var body_h := float(PlaceholderThrower.SIZE.y)
-	var body_w := float(PlaceholderThrower.SIZE.x)
+	var body_h := PlaceholderThrower.COLLISION_SIZE.y
+	var body_w := PlaceholderThrower.COLLISION_SIZE.x
 	probe.size = Vector2(36.0, maxf(body_h - 4.0, 8.0))
 	var params := PhysicsShapeQueryParameters2D.new()
 	params.shape = probe
