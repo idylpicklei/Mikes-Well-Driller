@@ -130,11 +130,11 @@ func _fire_glock(aim: Vector2) -> void:
 
 
 func _fire_sawn(aim: Vector2) -> void:
-	# 3 pellets, short range, wider spread.
-	var spreads := [-0.22, 0.0, 0.22]
+	# 3 pellets, tighter spread, twice the range (same speed).
+	var spreads := [-0.12, 0.0, 0.12]
 	for spread in spreads:
 		var dir := aim.rotated(spread)
-		_spawn_bullet(dir, 1, 300.0, 0.28, Color(0.92, 0.82, 0.62), Vector2(5, 2))
+		_spawn_bullet(dir, 1, 300.0, 0.56, Color(0.92, 0.82, 0.62), Vector2(5, 2))
 
 
 func _fire_coil(aim: Vector2) -> void:
