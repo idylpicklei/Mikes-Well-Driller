@@ -59,10 +59,11 @@ func _apply_footprint_collision() -> void:
 	var shape_node := get_node_or_null("CollisionShape2D") as CollisionShape2D
 	if shape_node == null:
 		return
+	# Body-sized rect with feet at the CharacterBody2D origin (not the 64 cell).
 	var rect := RectangleShape2D.new()
-	rect.size = Vector2(PlaceholderEnemy.SIZE)
+	rect.size = PlaceholderEnemy.COLLISION_SIZE
 	shape_node.shape = rect
-	shape_node.position = PlaceholderEnemy.SPRITE_OFFSET
+	shape_node.position = PlaceholderEnemy.COLLISION_OFFSET
 
 
 func _physics_process(delta: float) -> void:
@@ -163,8 +164,8 @@ func _wall_blocks(dir: float) -> bool:
 	# Probe ahead within hop clearance so a short vault cannot clear a 16×32 wall.
 	var space := get_world_2d().direct_space_state
 	var probe := RectangleShape2D.new()
-	var body_h := float(PlaceholderEnemy.SIZE.y)
-	var body_w := float(PlaceholderEnemy.SIZE.x)
+	var body_h := PlaceholderEnemy.COLLISION_SIZE.y
+	var body_w := PlaceholderEnemy.COLLISION_SIZE.x
 	probe.size = Vector2(36.0, maxf(body_h - 4.0, 8.0))
 	var params := PhysicsShapeQueryParameters2D.new()
 	params.shape = probe
