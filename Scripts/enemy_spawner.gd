@@ -4,7 +4,7 @@ extends StaticBody2D
 
 const ENEMY_SCENE := preload("res://Scenes/enemy.tscn")
 const THROWER_SCENE := preload("res://Scenes/enemy_thrower.tscn")
-## After the first crab pack, about one in three spawns is a ranged thrower.
+## After the first melee pack, about one in three spawns is a ranged thrower.
 const THROWER_MIX_CHANCE := 1.0 / 3.0
 ## Steady sandbox cadence after the opening grace window.
 const SPAWN_INTERVAL := 8.0
@@ -78,7 +78,7 @@ func _process(delta: float) -> void:
 		if _timer >= FIRST_SPAWN_DELAY:
 			_timer = 0.0
 			_set_ship_active(true)
-			# First pack stays crabs so 1:00 is still a rush.
+			# First pack stays melee so 1:00 is still a rush.
 			_spawn()
 			_spawned_once = true
 		return

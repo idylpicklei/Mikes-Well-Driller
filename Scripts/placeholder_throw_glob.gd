@@ -1,8 +1,8 @@
 class_name PlaceholderThrowGlob
 extends RefCounted
 
-## Lobbed acid glob: 12×12 at throw_glob.png.
-const SIZE := Vector2i(12, 12)
+## Lobbed acid glob: 16×16 at throw_glob.png.
+const SIZE := Vector2i(16, 16)
 const TEXTURE_PATH := "res://Assets/sprites/throw_glob.png"
 
 
