@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://Scripts/throw_glob.gd" id="1_glob"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_glob"]
-radius = 5.0
+radius = 7.0
 
 [node name="ThrowGlob" type="Area2D"]
 collision_layer = 0

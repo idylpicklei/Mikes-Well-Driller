@@ -163,7 +163,8 @@ func _release_throw(aim: Node2D) -> void:
 		return
 	var glob := GLOB_SCENE.instantiate()
 	host.add_child(glob)
-	var muzzle := global_position + Vector2(0.0, -22.0)
+	# Muzzle near upper torso of the 64px thrower (scaled from the old 32px -22).
+	var muzzle := global_position + Vector2(0.0, -44.0)
 	glob.global_position = muzzle
 	var aim_point := aim.global_position + Vector2(0.0, -12.0)
 	if glob.has_method("setup"):
