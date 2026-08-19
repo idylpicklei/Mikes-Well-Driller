@@ -3,9 +3,9 @@ extends TileMapLayer
 ## Wide heightmap terrain. Tweak in the inspector; art can replace the
 ## placeholder atlas without changing these tile ids.
 @export var world_seed: int = 0
-## Wide land strip: plenty of plateau between spawn and each shore.
-## Sized for MIN_SPAWNER_TILES (280) + jitter (~24) + ship footprint + a long run past each ship.
-@export var width: int = 960
+## Extra-wide land strip: near ships for 1-min contact, far ships for the long walk.
+## Sized for FAR_SPAWNER_TILES (~900) + jitter + ship footprint + a long run past each far ship.
+@export var width: int = 2880
 @export var bedrock_y: int = 42
 @export var base_surface_y: int = 10
 @export var hill_amplitude: int = 7
@@ -14,8 +14,10 @@ extends TileMapLayer
 
 const PLACEHOLDER_ATLAS := "res://Assets/sprites/terrain_tileset.png"
 
-## Keep first ships well off the start plateau so Mike can open B and place a hub.
-const MIN_SPAWNER_TILES := 280
+## Near ships: close enough that crabs reach the plateau ~1 minute after the 60s land.
+const MIN_SPAWNER_TILES := 90
+## Far ships: deep on the big map so there is still a long walk after first contact.
+const FAR_SPAWNER_TILES := 900
 const SPAWNER_SIDE_CLEAR := 2
 ## Beach (dry|wet|scum|shallow-blend) then acid ocean past the map edge.
 ## Ocean is long enough to continue past the camera limit (no navy void at the edge).
@@ -264,8 +266,12 @@ func _place_enemy_spawners(game: Node) -> void:
 		return
 
 	var spawn_x := int(width / 2.0)
-	_add_spawner(structures, _find_open_spawner_on_side(spawn_x, -1))
-	_add_spawner(structures, _find_open_spawner_on_side(spawn_x, 1))
+	# Near pair (~90 tiles): 1-minute first contact after ships land at 60s.
+	_add_spawner(structures, _find_open_spawner_on_side(spawn_x, -1, MIN_SPAWNER_TILES))
+	_add_spawner(structures, _find_open_spawner_on_side(spawn_x, 1, MIN_SPAWNER_TILES))
+	# Far pair (~900 tiles): reason to walk the extra-wide map.
+	_add_spawner(structures, _find_open_spawner_on_side(spawn_x, -1, FAR_SPAWNER_TILES))
+	_add_spawner(structures, _find_open_spawner_on_side(spawn_x, 1, FAR_SPAWNER_TILES))
 
 
 func _place_stranded_hirees(game: Node) -> void:
@@ -306,28 +312,51 @@ func _add_spawner(structures: Node2D, left_x: int) -> void:
 	spawner.global_position = to_global(foot)
 
 
-func _find_open_spawner_on_side(spawn_x: int, side: int) -> int:
-	var extra := absi((_height_noise.seed >> (1 if side > 0 else 3))) % 24
-	var start := spawn_x + side * (MIN_SPAWNER_TILES + extra)
+func _find_open_spawner_on_side(spawn_x: int, side: int, min_tiles: int) -> int:
+	# Jitter differs by band so near/far sites on the same side don't share one offset.
+	var band := 1 if min_tiles >= FAR_SPAWNER_TILES else 0
+	var shift := (1 if side > 0 else 3) + band * 5
+	var extra := absi((_height_noise.seed >> shift)) % 24
+	var start := spawn_x + side * (min_tiles + extra)
 	start = clampi(start, 6, width - 7)
-	var found := _scan_open_spawner_on_side(spawn_x, start, side)
+	var found := _scan_open_spawner_on_side(spawn_x, start, side, min_tiles)
 	if found != -999999:
 		return found
-	return clampi(spawn_x + side * MIN_SPAWNER_TILES, 6, width - 7)
+	return clampi(spawn_x + side * min_tiles, 6, width - 7)
 
 
-func _scan_open_spawner_on_side(spawn_x: int, start: int, side: int) -> int:
+func _scan_open_spawner_on_side(spawn_x: int, start: int, side: int, min_tiles: int) -> int:
 	for offset in width:
 		for candidate in [start + offset, start - offset]:
 			if side < 0 and candidate >= spawn_x:
 				continue
 			if side > 0 and candidate <= spawn_x:
 				continue
-			if absi(candidate - spawn_x) < MIN_SPAWNER_TILES:
+			if absi(candidate - spawn_x) < min_tiles:
+				continue
+			# Keep near and far footprints from stacking on the same flat.
+			if not _spawner_far_enough_from_others(candidate):
 				continue
 			if _spawner_site_open(candidate):
 				return candidate
 	return -999999
+
+
+func _spawner_far_enough_from_others(left_x: int) -> bool:
+	var footprint := PlaceholderSpawner.WIDTH_TILES
+	var min_gap := footprint + SPAWNER_SIDE_CLEAR * 2 + 8
+	var structures := get_parent().get_node_or_null("Structures") as Node2D
+	if structures == null:
+		return true
+	for child in structures.get_children():
+		if not child.is_in_group("alien_ship") and not child.is_in_group("enemy_spawner"):
+			continue
+		if not child is Node2D:
+			continue
+		var other_cell := local_to_map(to_local((child as Node2D).global_position))
+		if absi(other_cell.x - left_x) < min_gap:
+			return false
+	return true
 
 
 func _spawner_site_open(left_x: int) -> bool:
