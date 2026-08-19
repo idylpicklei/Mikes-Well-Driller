@@ -461,6 +461,8 @@ func _occupied_footprints() -> Array[Rect2]:
 	_append_group_footprints(rects, "wall", PlaceholderWall.SIZE)
 	_append_group_footprints(rects, "turret", PlaceholderTurret.SIZE)
 	_append_group_footprints(rects, "found_store", PlaceholderStore.SIZE)
+	_append_group_footprints(rects, "gas_station", PlaceholderGasStation.SIZE)
+	_append_group_footprints(rects, "abandoned_car", PlaceholderCar.SIZE)
 	return rects
 
 

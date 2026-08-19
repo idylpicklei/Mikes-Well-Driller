@@ -1,0 +1,21 @@
+[gd_scene load_steps=2 format=3 uid="uid://cgasstation0001"]
+
+[ext_resource type="Script" path="res://Scripts/gas_station.gd" id="1_gas"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_gas"]
+size = Vector2(96, 64)
+
+[node name="GasStation" type="Area2D"]
+z_index = 2
+collision_layer = 0
+collision_mask = 1
+monitoring = true
+monitorable = false
+script = ExtResource("1_gas")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+position = Vector2(0, -32)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -32)
+shape = SubResource("RectangleShape2D_gas")
