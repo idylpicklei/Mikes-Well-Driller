@@ -20,6 +20,10 @@ const MIN_SPAWNER_TILES := 90
 const FAR_SPAWNER_TILES := 900
 ## One found store on walkable ground, roughly this far from the start plateau.
 const FOUND_STORE_TILES := 220
+## Abandoned gas station further out than the store (~400–500 tiles).
+const GAS_STATION_TILES := 450
+## Scattered abandoned cars on grass (mix of two variants).
+const ABANDONED_CAR_COUNT := 5
 const SPAWNER_SIDE_CLEAR := 2
 ## Beach (dry|wet|scum|shallow-blend) then acid ocean past the map edge.
 ## Ocean is long enough to continue past the camera limit (no navy void at the edge).
@@ -191,6 +195,8 @@ func _setup_world() -> void:
 	_place_shores()
 	_place_enemy_spawners(game)
 	_place_found_store(game)
+	_place_gas_station(game)
+	_place_abandoned_cars(game)
 	_place_stranded_hirees(game)
 
 
@@ -321,7 +327,9 @@ func _place_found_store(game: Node) -> void:
 		return
 	var spawn_x := int(width / 2.0)
 	# One side only (right of plateau), ~220 tiles out, not on a ship / hub overlap.
-	var left_x := _find_open_store_on_side(spawn_x, 1, FOUND_STORE_TILES)
+	var left_x := _find_open_prop_on_side(
+		spawn_x, 1, FOUND_STORE_TILES, PlaceholderStore.WIDTH_TILES, PlaceholderStore.HEIGHT_TILES, 7
+	)
 	_add_found_store(structures, left_x)
 
 
@@ -336,18 +344,106 @@ func _add_found_store(structures: Node2D, left_x: int) -> void:
 	store.global_position = to_global(foot)
 
 
-func _find_open_store_on_side(spawn_x: int, side: int, min_tiles: int) -> int:
-	var shift := 7 if side > 0 else 11
-	var extra := absi((_height_noise.seed >> shift)) % 18
+func _place_gas_station(game: Node) -> void:
+	var structures := game.get_node_or_null("Structures") as Node2D
+	if structures == null:
+		return
+	var spawn_x := int(width / 2.0)
+	# Further than the store (~450), right side, walkable grass — not on ship/store/hub.
+	var left_x := _find_open_prop_on_side(
+		spawn_x,
+		1,
+		GAS_STATION_TILES,
+		PlaceholderGasStation.WIDTH_TILES,
+		PlaceholderGasStation.HEIGHT_TILES,
+		13
+	)
+	_add_gas_station(structures, left_x)
+
+
+func _add_gas_station(structures: Node2D, left_x: int) -> void:
+	var surface := _surface_y(left_x)
+	var width_tiles := PlaceholderGasStation.WIDTH_TILES
+	var left_center := map_to_local(Vector2i(left_x, surface))
+	var right_center := map_to_local(Vector2i(left_x + width_tiles - 1, surface))
+	var foot := Vector2((left_center.x + right_center.x) * 0.5, left_center.y - PlaceholderTileset.TILE_SIZE * 0.5)
+	var station := preload("res://Scenes/gas_station.tscn").instantiate()
+	structures.add_child(station)
+	station.global_position = to_global(foot)
+
+
+func _place_abandoned_cars(game: Node) -> void:
+	var structures := game.get_node_or_null("Structures") as Node2D
+	if structures == null:
+		return
+	var spawn_x := int(width / 2.0)
+	var placed: Array[int] = []
+	# Mix of both sides, beyond the near ships, clear of store/station/ships/acid.
+	var targets: Array[Dictionary] = [
+		{"side": -1, "min_tiles": 140, "shift": 17, "variant": PlaceholderCar.Variant.A},
+		{"side": 1, "min_tiles": 160, "shift": 19, "variant": PlaceholderCar.Variant.B},
+		{"side": -1, "min_tiles": 280, "shift": 21, "variant": PlaceholderCar.Variant.B},
+		{"side": 1, "min_tiles": 320, "shift": 23, "variant": PlaceholderCar.Variant.A},
+		{"side": -1, "min_tiles": 520, "shift": 29, "variant": PlaceholderCar.Variant.A},
+	]
+	for i in mini(ABANDONED_CAR_COUNT, targets.size()):
+		var t: Dictionary = targets[i]
+		var variant: PlaceholderCar.Variant = t["variant"]
+		var w_tiles := PlaceholderCar.width_tiles_for(variant)
+		var h_tiles := PlaceholderCar.height_tiles_for(variant)
+		var left_x := _find_open_prop_on_side(
+			spawn_x, int(t["side"]), int(t["min_tiles"]), w_tiles, h_tiles, int(t["shift"]), placed, 10
+		)
+		if left_x == -999999:
+			continue
+		placed.append(left_x)
+		_add_abandoned_car(structures, left_x, variant)
+
+
+func _add_abandoned_car(structures: Node2D, left_x: int, variant: PlaceholderCar.Variant) -> void:
+	var surface := _surface_y(left_x)
+	var width_tiles := PlaceholderCar.width_tiles_for(variant)
+	var left_center := map_to_local(Vector2i(left_x, surface))
+	var right_center := map_to_local(Vector2i(left_x + width_tiles - 1, surface))
+	var foot := Vector2((left_center.x + right_center.x) * 0.5, left_center.y - PlaceholderTileset.TILE_SIZE * 0.5)
+	var car := preload("res://Scenes/abandoned_car.tscn").instantiate()
+	structures.add_child(car)
+	car.global_position = to_global(foot)
+	if car.has_method("set_variant"):
+		car.set_variant(variant)
+
+
+func _find_open_prop_on_side(
+	spawn_x: int,
+	side: int,
+	min_tiles: int,
+	footprint: int,
+	height: int,
+	shift: int,
+	avoid_xs: Array[int] = [],
+	avoid_gap: int = 8
+) -> int:
+	var extra := absi((_height_noise.seed >> (shift % 30))) % 18
 	var start := spawn_x + side * (min_tiles + extra)
-	start = clampi(start, 8, width - PlaceholderStore.WIDTH_TILES - 8)
-	var found := _scan_open_store_on_side(spawn_x, start, side, min_tiles)
+	start = clampi(start, 8, width - footprint - 8)
+	var found := _scan_open_prop_on_side(
+		spawn_x, start, side, min_tiles, footprint, height, avoid_xs, avoid_gap
+	)
 	if found != -999999:
 		return found
-	return clampi(spawn_x + side * min_tiles, 8, width - PlaceholderStore.WIDTH_TILES - 8)
+	return clampi(spawn_x + side * min_tiles, 8, width - footprint - 8)
 
 
-func _scan_open_store_on_side(spawn_x: int, start: int, side: int, min_tiles: int) -> int:
+func _scan_open_prop_on_side(
+	spawn_x: int,
+	start: int,
+	side: int,
+	min_tiles: int,
+	footprint: int,
+	height: int,
+	avoid_xs: Array[int],
+	avoid_gap: int
+) -> int:
 	for offset in width:
 		for candidate in [start + offset, start - offset]:
 			if side < 0 and candidate >= spawn_x:
@@ -356,21 +452,34 @@ func _scan_open_store_on_side(spawn_x: int, start: int, side: int, min_tiles: in
 				continue
 			if absi(candidate - spawn_x) < min_tiles - 8:
 				continue
-			if not _store_clear_of_ships(candidate):
+			var too_close := false
+			for other_x in avoid_xs:
+				if absi(candidate - other_x) < avoid_gap:
+					too_close = true
+					break
+			if too_close:
 				continue
-			if _store_site_open(candidate):
+			if not _prop_clear_of_structures(candidate, footprint):
+				continue
+			if _prop_site_open(candidate, footprint, height):
 				return candidate
 	return -999999
 
 
-func _store_clear_of_ships(left_x: int) -> bool:
-	var footprint := PlaceholderStore.WIDTH_TILES
+func _prop_clear_of_structures(left_x: int, footprint: int) -> bool:
 	var min_gap := maxi(PlaceholderSpawner.WIDTH_TILES, footprint) + SPAWNER_SIDE_CLEAR * 2 + 4
 	var structures := get_parent().get_node_or_null("Structures") as Node2D
 	if structures == null:
 		return true
 	for child in structures.get_children():
-		if not child.is_in_group("alien_ship") and not child.is_in_group("enemy_spawner"):
+		if not (
+			child.is_in_group("alien_ship")
+			or child.is_in_group("enemy_spawner")
+			or child.is_in_group("found_store")
+			or child.is_in_group("gas_station")
+			or child.is_in_group("abandoned_car")
+			or child.is_in_group("main_hub")
+		):
 			continue
 		if not child is Node2D:
 			continue
@@ -380,9 +489,7 @@ func _store_clear_of_ships(left_x: int) -> bool:
 	return true
 
 
-func _store_site_open(left_x: int) -> bool:
-	var footprint := PlaceholderStore.WIDTH_TILES
-	var height := PlaceholderStore.HEIGHT_TILES
+func _prop_site_open(left_x: int, footprint: int, height: int) -> bool:
 	var first := left_x
 	var last := left_x + footprint - 1
 	if first < 2 or last >= width - 2:
