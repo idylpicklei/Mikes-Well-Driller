@@ -3,9 +3,9 @@ extends TileMapLayer
 ## Wide heightmap terrain. Tweak in the inspector; art can replace the
 ## placeholder atlas without changing these tile ids.
 @export var world_seed: int = 0
-## Short enough that each shore is a brief run past the far ship (not ~240 empty tiles).
-## Sized for MIN_SPAWNER_TILES (100) + jitter (~24) + ship footprint + ~12-tile shore run per side.
-@export var width: int = 280
+## Wide land strip: plenty of plateau between spawn and each shore.
+## Sized for MIN_SPAWNER_TILES (280) + jitter (~24) + ship footprint + a long run past each ship.
+@export var width: int = 960
 @export var bedrock_y: int = 42
 @export var base_surface_y: int = 10
 @export var hill_amplitude: int = 7
@@ -15,7 +15,7 @@ extends TileMapLayer
 const PLACEHOLDER_ATLAS := "res://Assets/sprites/terrain_tileset.png"
 
 ## Keep first ships well off the start plateau so Mike can open B and place a hub.
-const MIN_SPAWNER_TILES := 100
+const MIN_SPAWNER_TILES := 280
 const SPAWNER_SIDE_CLEAR := 2
 ## Beach (dry|wet|scum|shallow-blend) then acid ocean past the map edge.
 ## Ocean is long enough to continue past the camera limit (no navy void at the edge).
