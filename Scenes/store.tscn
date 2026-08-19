@@ -5,10 +5,12 @@
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_store"]
 size = Vector2(64, 48)
 
-[node name="FoundStore" type="StaticBody2D"]
+[node name="FoundStore" type="Area2D"]
 z_index = 2
-collision_layer = 1
+collision_layer = 0
 collision_mask = 1
+monitoring = true
+monitorable = false
 script = ExtResource("1_store")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]

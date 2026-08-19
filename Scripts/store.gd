@@ -1,17 +1,24 @@
-extends Node2D
+extends Area2D
 
 ## World-placed found store. Not in the B catalog. E opens the shop panel.
+## Walk-through Area2D trigger — no solid body. Stand in/near the stall, press E.
 
-const INTERACT_RANGE := 40.0
 const PROMPT_OFFSET := Vector2(0, -56)
+## Modest pad so standing just beside the stall still overlaps the trigger.
+const INTERACT_PAD := Vector2(16, 8)
 
 var _sprite: Sprite2D
 var _prompt: Label
+var _player_inside: bool = false
 
 
 func _ready() -> void:
 	add_to_group("found_store")
 	z_index = 2
+	collision_layer = 0
+	collision_mask = 1
+	monitoring = true
+	monitorable = false
 	_sprite = get_node_or_null("Sprite2D") as Sprite2D
 	if _sprite == null:
 		_sprite = Sprite2D.new()
@@ -22,16 +29,20 @@ func _ready() -> void:
 	_sprite.position = PlaceholderStore.SPRITE_OFFSET
 	_sprite.visible = true
 	_ensure_prompt()
-	_apply_footprint_collision()
+	_apply_interact_shape()
+	if not body_entered.is_connected(_on_body_entered):
+		body_entered.connect(_on_body_entered)
+	if not body_exited.is_connected(_on_body_exited):
+		body_exited.connect(_on_body_exited)
 	set_process(true)
 
 
-func _apply_footprint_collision() -> void:
+func _apply_interact_shape() -> void:
 	var shape_node := get_node_or_null("CollisionShape2D") as CollisionShape2D
 	if shape_node == null:
 		return
 	var rect := RectangleShape2D.new()
-	rect.size = Vector2(PlaceholderStore.SIZE)
+	rect.size = Vector2(PlaceholderStore.SIZE) + INTERACT_PAD
 	shape_node.shape = rect
 	shape_node.position = PlaceholderStore.SPRITE_OFFSET
 
@@ -51,6 +62,16 @@ func _ensure_prompt() -> void:
 	add_child(_prompt)
 
 
+func _on_body_entered(body: Node2D) -> void:
+	if body.is_in_group("player"):
+		_player_inside = true
+
+
+func _on_body_exited(body: Node2D) -> void:
+	if body.is_in_group("player"):
+		_player_inside = false
+
+
 func _process(_delta: float) -> void:
 	if PauseMenu.is_open or BuildMenu.is_open or BuildPlacer.is_placing:
 		_prompt.visible = false
@@ -58,19 +79,9 @@ func _process(_delta: float) -> void:
 	if ShopMenu.is_open:
 		_prompt.visible = false
 		return
-	var player := _nearby_player()
-	_prompt.visible = player != null
-	if player == null:
+	_prompt.visible = _player_inside
+	if not _player_inside:
 		return
 	_prompt.text = "E — Shop"
 	if Input.is_action_just_pressed("interact"):
 		ShopMenu.open_shop()
-
-
-func _nearby_player() -> Node2D:
-	var player := get_tree().get_first_node_in_group("player") as Node2D
-	if player == null:
-		return null
-	if global_position.distance_to(player.global_position) > INTERACT_RANGE:
-		return null
-	return player
