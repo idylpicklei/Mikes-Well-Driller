@@ -81,7 +81,7 @@ func _camera_center() -> Vector2:
 		return cam.get_screen_center_position()
 	var player := get_tree().get_first_node_in_group("player") as Node2D
 	if player:
-		return player.global_position + Vector2(0, -48)
+		return player.global_position + Vector2(0, -56)
 	return Vector2.ZERO
 
 
