@@ -112,11 +112,13 @@ func _set_open(open: bool) -> void:
 		# Clear stale armed highlight; B is handled here so BuildPlacer never sees it.
 		selected_item = &""
 		_cancel_armed_placement()
+		if ShopMenu.is_open:
+			ShopMenu.close_menu()
 		# Catalog open = full world freeze (combat, thirst, spawns, first-ship timer).
 		get_tree().paused = true
 	else:
-		# Keep pause if Esc pause or Game Over owns it; else resume so placement can run.
-		if not PauseMenu.is_open and not _game_over_visible():
+		# Keep pause if Esc pause, shop, or Game Over owns it; else resume so placement can run.
+		if not PauseMenu.is_open and not ShopMenu.is_open and not _game_over_visible():
 			get_tree().paused = false
 	queue_redraw()
 
@@ -130,6 +132,9 @@ func _cancel_armed_placement() -> void:
 
 func _input(event: InputEvent) -> void:
 	if PauseMenu.is_open or _game_over_visible():
+		return
+	# Shop owns Esc/E/B while open — B must close the shop, not open this wheel.
+	if ShopMenu.is_open:
 		return
 	# B only — never D / arrows / jump (stale dual-binds used to open the wheel).
 	if InputBindings.is_build_toggle_event(event):

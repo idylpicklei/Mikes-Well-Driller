@@ -2,7 +2,7 @@ extends Node
 
 const SAVE_PATH := "user://input.cfg"
 ## Bump when default binds change so stale user:// configs cannot keep D/Right on Build.
-const BINDINGS_VERSION := 2
+const BINDINGS_VERSION := 3
 
 const ACTION_DEFS: Array[Dictionary] = [
 	{"action": &"move_left", "label": "Move Left", "remappable": true},
@@ -11,6 +11,8 @@ const ACTION_DEFS: Array[Dictionary] = [
 	{"action": &"shoot", "label": "Shoot", "remappable": true},
 	{"action": &"interact", "label": "Interact", "remappable": true},
 	{"action": &"build_menu", "label": "Build", "remappable": true},
+	{"action": &"cycle_weapon", "label": "Cycle Gun", "remappable": true},
+	{"action": &"throw_grenade", "label": "Throw Grenade", "remappable": true},
 	{"action": &"pause", "label": "Pause", "remappable": false},
 ]
 
@@ -49,6 +51,10 @@ func get_default_events(action: StringName) -> Array[InputEvent]:
 			return [_key(KEY_E)]
 		&"build_menu":
 			return [_key(KEY_B)]
+		&"cycle_weapon":
+			return [_key(KEY_Q)]
+		&"throw_grenade":
+			return [_key(KEY_G)]
 		&"pause":
 			return [_key(KEY_ESCAPE)]
 		_:
@@ -97,8 +103,11 @@ func bind_action(action: StringName, event: InputEvent) -> void:
 	apply_events(action, [event.duplicate()])
 	# Drop the same key from the opposite side so Build and Move stay exclusive.
 	if action == &"build_menu":
-		_erase_event_from_actions(event, [&"move_left", &"move_right", &"jump", &"interact"])
-	elif action in [&"move_left", &"move_right", &"jump", &"interact"]:
+		_erase_event_from_actions(
+			event,
+			[&"move_left", &"move_right", &"jump", &"interact", &"cycle_weapon", &"throw_grenade"]
+		)
+	elif action in [&"move_left", &"move_right", &"jump", &"interact", &"cycle_weapon", &"throw_grenade"]:
 		_erase_event_from_actions(event, [&"build_menu"])
 	save_bindings()
 

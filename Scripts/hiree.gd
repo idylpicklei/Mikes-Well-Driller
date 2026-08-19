@@ -95,7 +95,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _try_hire_interact() -> void:
-	if PauseMenu.is_open or BuildMenu.is_open or BuildPlacer.is_placing:
+	if PauseMenu.is_open or BuildMenu.is_open or ShopMenu.is_open or BuildPlacer.is_placing:
 		return
 	var player := _nearby_player()
 	if player == null:
