@@ -392,9 +392,14 @@ func _place_abandoned_cars(game: Node) -> void:
 		var w_tiles := PlaceholderCar.width_tiles_for(variant)
 		var h_tiles := PlaceholderCar.height_tiles_for(variant)
 		var left_x := _find_open_prop_on_side(
-			spawn_x, int(t["side"]), int(t["min_tiles"]), w_tiles, h_tiles, int(t["shift"]), placed, 10
+			spawn_x, int(t["side"]), int(t["min_tiles"]), w_tiles, h_tiles, int(t["shift"]), placed, 10, false
 		)
+		# Require a verified open grass site (no forced fallback for cars).
 		if left_x == -999999:
+			continue
+		if not _prop_site_open(left_x, w_tiles, h_tiles):
+			continue
+		if not _prop_clear_of_structures(left_x, w_tiles):
 			continue
 		placed.append(left_x)
 		_add_abandoned_car(structures, left_x, variant)
@@ -421,7 +426,8 @@ func _find_open_prop_on_side(
 	height: int,
 	shift: int,
 	avoid_xs: Array[int] = [],
-	avoid_gap: int = 8
+	avoid_gap: int = 8,
+	allow_fallback: bool = true
 ) -> int:
 	var extra := absi((_height_noise.seed >> (shift % 30))) % 18
 	var start := spawn_x + side * (min_tiles + extra)
@@ -431,6 +437,8 @@ func _find_open_prop_on_side(
 	)
 	if found != -999999:
 		return found
+	if not allow_fallback:
+		return -999999
 	return clampi(spawn_x + side * min_tiles, 8, width - footprint - 8)
 
 
