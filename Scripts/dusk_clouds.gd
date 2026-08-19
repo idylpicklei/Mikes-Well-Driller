@@ -1,6 +1,8 @@
 extends Node2D
 
 ## Dusk wasteland clouds. Behind terrain/Mike, in front of clear color.
+## Node2D in world space — not ParallaxBackground/CanvasLayer — so z_index
+## stays in the dusk stack (sky → stars → hills_far → clouds → hills_mid).
 ## Slow horizontal drift + gentle X parallax. Vertical follow is heavily
 ## dampened so jumps don't make the sky lurch (still moves a little).
 ## Mix A/D low, B/E mid, C/F/G high — a/b/c stay; d/e/f/g add variance.
