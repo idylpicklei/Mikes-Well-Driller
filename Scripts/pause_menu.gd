@@ -37,6 +37,9 @@ func _input(event: InputEvent) -> void:
 			_cancel_remap()
 		elif is_open:
 			_resume()
+		elif ShopMenu.is_open:
+			# Esc closes the found store only — do not also open this pause overlay.
+			ShopMenu.close_menu()
 		else:
 			# Never leave PLACE X armed under the pause overlay.
 			_cancel_active_placement()
@@ -72,6 +75,8 @@ func _open_pause() -> void:
 		return
 	if BuildMenu.is_open:
 		BuildMenu.close_menu()
+	if ShopMenu.is_open:
+		ShopMenu.close_menu()
 	_cancel_active_placement()
 	is_open = true
 	_view = View.MAIN

@@ -18,6 +18,8 @@ const PLACEHOLDER_ATLAS := "res://Assets/sprites/terrain_tileset.png"
 const MIN_SPAWNER_TILES := 90
 ## Far ships: deep on the big map so there is still a long walk after first contact.
 const FAR_SPAWNER_TILES := 900
+## One found store on walkable ground, roughly this far from the start plateau.
+const FOUND_STORE_TILES := 220
 const SPAWNER_SIDE_CLEAR := 2
 ## Beach (dry|wet|scum|shallow-blend) then acid ocean past the map edge.
 ## Ocean is long enough to continue past the camera limit (no navy void at the edge).
@@ -188,6 +190,7 @@ func _setup_world() -> void:
 
 	_place_shores()
 	_place_enemy_spawners(game)
+	_place_found_store(game)
 	_place_stranded_hirees(game)
 
 
@@ -310,6 +313,90 @@ func _add_spawner(structures: Node2D, left_x: int) -> void:
 	var spawner := preload("res://Scenes/enemy_spawner.tscn").instantiate()
 	structures.add_child(spawner)
 	spawner.global_position = to_global(foot)
+
+
+func _place_found_store(game: Node) -> void:
+	var structures := game.get_node_or_null("Structures") as Node2D
+	if structures == null:
+		return
+	var spawn_x := int(width / 2.0)
+	# One side only (right of plateau), ~220 tiles out, not on a ship / hub overlap.
+	var left_x := _find_open_store_on_side(spawn_x, 1, FOUND_STORE_TILES)
+	_add_found_store(structures, left_x)
+
+
+func _add_found_store(structures: Node2D, left_x: int) -> void:
+	var surface := _surface_y(left_x)
+	var width_tiles := PlaceholderStore.WIDTH_TILES
+	var left_center := map_to_local(Vector2i(left_x, surface))
+	var right_center := map_to_local(Vector2i(left_x + width_tiles - 1, surface))
+	var foot := Vector2((left_center.x + right_center.x) * 0.5, left_center.y - PlaceholderTileset.TILE_SIZE * 0.5)
+	var store := preload("res://Scenes/store.tscn").instantiate()
+	structures.add_child(store)
+	store.global_position = to_global(foot)
+
+
+func _find_open_store_on_side(spawn_x: int, side: int, min_tiles: int) -> int:
+	var shift := 7 if side > 0 else 11
+	var extra := absi((_height_noise.seed >> shift)) % 18
+	var start := spawn_x + side * (min_tiles + extra)
+	start = clampi(start, 8, width - PlaceholderStore.WIDTH_TILES - 8)
+	var found := _scan_open_store_on_side(spawn_x, start, side, min_tiles)
+	if found != -999999:
+		return found
+	return clampi(spawn_x + side * min_tiles, 8, width - PlaceholderStore.WIDTH_TILES - 8)
+
+
+func _scan_open_store_on_side(spawn_x: int, start: int, side: int, min_tiles: int) -> int:
+	for offset in width:
+		for candidate in [start + offset, start - offset]:
+			if side < 0 and candidate >= spawn_x:
+				continue
+			if side > 0 and candidate <= spawn_x:
+				continue
+			if absi(candidate - spawn_x) < min_tiles - 8:
+				continue
+			if not _store_clear_of_ships(candidate):
+				continue
+			if _store_site_open(candidate):
+				return candidate
+	return -999999
+
+
+func _store_clear_of_ships(left_x: int) -> bool:
+	var footprint := PlaceholderStore.WIDTH_TILES
+	var min_gap := maxi(PlaceholderSpawner.WIDTH_TILES, footprint) + SPAWNER_SIDE_CLEAR * 2 + 4
+	var structures := get_parent().get_node_or_null("Structures") as Node2D
+	if structures == null:
+		return true
+	for child in structures.get_children():
+		if not child.is_in_group("alien_ship") and not child.is_in_group("enemy_spawner"):
+			continue
+		if not child is Node2D:
+			continue
+		var other_cell := local_to_map(to_local((child as Node2D).global_position))
+		if absi(other_cell.x - left_x) < min_gap:
+			return false
+	return true
+
+
+func _store_site_open(left_x: int) -> bool:
+	var footprint := PlaceholderStore.WIDTH_TILES
+	var height := PlaceholderStore.HEIGHT_TILES
+	var first := left_x
+	var last := left_x + footprint - 1
+	if first < 2 or last >= width - 2:
+		return false
+	var surface := _surface_y(left_x)
+	for x in range(first, last + 1):
+		if _surface_y(x) != surface:
+			return false
+		if not _is_grass_cell(Vector2i(x, surface)):
+			return false
+		for dy in range(1, height + 1):
+			if _has_cell(Vector2i(x, surface - dy)):
+				return false
+	return true
 
 
 func _find_open_spawner_on_side(spawn_x: int, side: int, min_tiles: int) -> int:
