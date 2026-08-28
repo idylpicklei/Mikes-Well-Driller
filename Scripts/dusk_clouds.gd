@@ -5,35 +5,28 @@ extends Node2D
 ## stays in the dusk stack (sky → stars → hills_far → clouds → hills_mid).
 ## Slow horizontal drift + gentle X parallax. Vertical follow is heavily
 ## dampened so jumps don't make the sky lurch (still moves a little).
-## Mix A/D/H low, B/E/J mid, C/F/G/K high — a–g stay; h/j/k add comfy variance.
-## Skip thin streak cloud_i. Hop dampen (parallax_y) stays soft, not locked.
+## Comfy keepers only: H wide/low, J mid dumbbell, K high small puff.
+## Same hop dampen + slow drift bands; a–g dropped (no cloud_i).
 
-const CLOUD_A := "res://Assets/sprites/cloud_a.png"
-const CLOUD_B := "res://Assets/sprites/cloud_b.png"
-const CLOUD_C := "res://Assets/sprites/cloud_c.png"
-const CLOUD_D := "res://Assets/sprites/cloud_d.png"
-const CLOUD_E := "res://Assets/sprites/cloud_e.png"
-const CLOUD_F := "res://Assets/sprites/cloud_f.png"
-const CLOUD_G := "res://Assets/sprites/cloud_g.png"
 const CLOUD_H := "res://Assets/sprites/cloud_h.png"
 const CLOUD_J := "res://Assets/sprites/cloud_j.png"
 const CLOUD_K := "res://Assets/sprites/cloud_k.png"
 
 ## Depth bands. parallax_y is a small fraction so hop bob is soft, not locked.
-## paths: band-specific sheets so plateaus don't repeat one stamp.
+## paths: one keeper sheet per band.
 const BANDS := [
 	{
-		"paths": [CLOUD_A, CLOUD_D, CLOUD_H],
+		"paths": [CLOUD_H],
 		"parallax_x": 0.18, "parallax_y": 0.035, "drift": 6.5,
 		"y_bias": -72.0, "modulate": Color(0.72, 0.58, 0.52, 0.82), "count": 11,
 	},
 	{
-		"paths": [CLOUD_B, CLOUD_E, CLOUD_J],
+		"paths": [CLOUD_J],
 		"parallax_x": 0.10, "parallax_y": 0.020, "drift": 3.6,
 		"y_bias": -108.0, "modulate": Color(0.55, 0.42, 0.40, 0.60), "count": 10,
 	},
 	{
-		"paths": [CLOUD_C, CLOUD_F, CLOUD_G, CLOUD_K],
+		"paths": [CLOUD_K],
 		"parallax_x": 0.04, "parallax_y": 0.010, "drift": 1.6,
 		"y_bias": -148.0, "modulate": Color(0.42, 0.32, 0.34, 0.46), "count": 9,
 	},
