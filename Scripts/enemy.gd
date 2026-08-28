@@ -39,16 +39,18 @@ func _ready() -> void:
 	_sprite = get_node_or_null("Sprite2D") as Sprite2D
 	if _sprite:
 		_sprite.texture = PlaceholderEnemy.create_texture()
+		_sprite.centered = true
+		_sprite.scale = Vector2(PlaceholderEnemy.DISPLAY_SCALE, PlaceholderEnemy.DISPLAY_SCALE)
 		_sprite.position = PlaceholderEnemy.SPRITE_OFFSET
 		_sprite.hframes = PlaceholderEnemy.FRAME_COUNT
 		_sprite.vframes = 1
 		_sprite.frame = 0
-		_sprite.centered = true
 		_sprite.visible = true
 		if max_health > 1:
 			# Tough enemies read slightly darker so 2-HP is noticeable without new art.
 			_sprite.modulate = Color(0.82, 0.72, 0.72, 1.0)
 	_apply_footprint_collision()
+
 	# Kick the walk sheet immediately so a spawn never looks like a static prop.
 	_walk_phase = randf() * float(PlaceholderEnemy.FRAME_COUNT)
 	if _sprite:

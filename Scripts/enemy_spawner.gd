@@ -4,7 +4,7 @@ extends StaticBody2D
 
 const ENEMY_SCENE := preload("res://Scenes/enemy.tscn")
 const THROWER_SCENE := preload("res://Scenes/enemy_thrower.tscn")
-## After the first melee pack, about one in three spawns is a ranged thrower.
+## About one in three spawns is a ranged thrower, including the opening ships.
 const THROWER_MIX_CHANCE := 1.0 / 3.0
 ## Steady sandbox cadence after the opening grace window.
 const SPAWN_INTERVAL := 8.0
@@ -17,7 +17,6 @@ var health := MAX_HEALTH
 var _timer := 0.0
 var _alive: Array[Node] = []
 var _dead := false
-var _spawned_once := false
 var _ship_landed := false
 
 
@@ -78,21 +77,19 @@ func _process(delta: float) -> void:
 		if _timer >= FIRST_SPAWN_DELAY:
 			_timer = 0.0
 			_set_ship_active(true)
-			# First pack stays melee so 1:00 is still a rush.
+			# Opening contact mixes throwers (~1 in 3) so first sight isn't melee-only.
 			_spawn()
-			_spawned_once = true
 		return
 	if _timer >= SPAWN_INTERVAL and _alive.size() < MAX_ALIVE:
 		_timer = 0.0
 		_spawn()
-		_spawned_once = true
 
 
 func _spawn() -> void:
 	var host := get_parent()
 	if host == null:
 		return
-	var use_thrower := _spawned_once and randf() < THROWER_MIX_CHANCE
+	var use_thrower := randf() < THROWER_MIX_CHANCE
 	var enemy: Node = (THROWER_SCENE if use_thrower else ENEMY_SCENE).instantiate()
 	if enemy.has_method("configure"):
 		enemy.configure(2 if use_thrower else 1)

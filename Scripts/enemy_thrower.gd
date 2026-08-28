@@ -47,13 +47,15 @@ func _ready() -> void:
 	_sprite = get_node_or_null("Sprite2D") as Sprite2D
 	if _sprite:
 		_sprite.texture = PlaceholderThrower.create_texture()
+		_sprite.centered = true
+		_sprite.scale = Vector2(PlaceholderThrower.DISPLAY_SCALE, PlaceholderThrower.DISPLAY_SCALE)
 		_sprite.position = PlaceholderThrower.SPRITE_OFFSET
 		_sprite.hframes = PlaceholderThrower.FRAME_COUNT
 		_sprite.vframes = 1
 		_sprite.frame = 0
-		_sprite.centered = true
 		_sprite.visible = true
 	_apply_footprint_collision()
+
 	_walk_phase = randf() * float(PlaceholderThrower.WALK_FRAMES)
 	if _sprite:
 		_sprite.frame = int(_walk_phase) % PlaceholderThrower.WALK_FRAMES
